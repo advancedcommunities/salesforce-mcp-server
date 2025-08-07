@@ -1,0 +1,160 @@
+{
+    "dxt_version": "0.2",
+    "name": "salesforce-mcp-server",
+    "display_name": "Salesforce MCP Server",
+    "version": "1.2.1",
+    "description": "Salesforce MCP Server - Interact with Salesforce orgs through AI assistants",
+    "icon": "icon.png",
+    "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)",
+    "author": {
+        "name": "Advanced Communities",
+        "url": "https://advancedcommunities.com"
+    },
+    "homepage": "https://github.com/akutishevsky/salesforce-mcp-server",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/akutishevsky/salesforce-mcp-server"
+    },
+    "user_config": {
+        "READ_ONLY": {
+            "type": "boolean",
+            "title": "Read-Only Mode",
+            "description": "When enabled, prevents Apex code execution (anonymous execution and tests)",
+            "default": false,
+            "required": false
+        },
+        "ALLOWED_ORGS": {
+            "type": "string",
+            "title": "Allowed Orgs",
+            "description": "Comma-separated list of allowed org aliases, or 'ALL' to allow all orgs",
+            "default": "ALL",
+            "required": true
+        }
+    },
+    "server": {
+        "type": "node",
+        "entry_point": "./build/index.js",
+        "mcp_config": {
+            "command": "node",
+            "args": ["${__dirname}/build/index.js"],
+            "env": {
+                "READ_ONLY": "${user_config.READ_ONLY}",
+                "ALLOWED_ORGS": "${user_config.ALLOWED_ORGS}"
+            }
+        }
+    },
+    "tools": [
+        {
+            "name": "execute_anonymous_apex",
+            "description": "Execute Apex code in a Salesforce Org"
+        },
+        {
+            "name": "sobject_list",
+            "description": "List all standard and custom objects in a Salesforce Org"
+        },
+        {
+            "name": "sobject_describe",
+            "description": "Describe a Salesforce SObject"
+        },
+        {
+            "name": "list_connected_salesforce_orgs",
+            "description": "List connected Salesforce Orgs"
+        },
+        {
+            "name": "query_records",
+            "description": "Query records from a Salesforce SObject with support for ORDER BY clause"
+        },
+        {
+            "name": "query_records_to_file",
+            "description": "Query records from a Salesforce SObject and save to a file with support for ORDER BY clause"
+        },
+        {
+            "name": "run_apex_tests",
+            "description": "Run Apex tests in a Salesforce Org"
+        },
+        {
+            "name": "get_apex_test_results",
+            "description": "Retrieve results from a previous asynchronous Apex test run"
+        },
+        {
+            "name": "get_apex_code_coverage",
+            "description": "Get code coverage information for a Salesforce Org"
+        },
+        {
+            "name": "get_server_permissions",
+            "description": "Get current server permission settings"
+        },
+        {
+            "name": "login_into_org",
+            "description": "Authenticate and login to a Salesforce org via web browser"
+        },
+        {
+            "name": "run_code_analyzer",
+            "description": "Analyze your code with a selection of rules to ensure good coding practices"
+        },
+        {
+            "name": "list_code_analyzer_rules",
+            "description": "List the rules that are available to analyze your code"
+        },
+        {
+            "name": "scanner_run",
+            "description": "Scan a codebase with multiple security and quality analysis engines"
+        },
+        {
+            "name": "scanner_run_dfa",
+            "description": "Run Salesforce Graph Engine for data flow analysis to identify security vulnerabilities"
+        },
+        {
+            "name": "assign_permission_set",
+            "description": "Assign permission sets to one or more org users"
+        },
+        {
+            "name": "assign_permission_set_license",
+            "description": "Assign permission set licenses to one or more org users"
+        },
+        {
+            "name": "display_user",
+            "description": "Display information about a Salesforce user"
+        },
+        {
+            "name": "list_metadata",
+            "description": "List metadata components and properties of a specified type"
+        },
+        {
+            "name": "list_metadata_types",
+            "description": "Display details about metadata types enabled for your org"
+        },
+        {
+            "name": "logout",
+            "description": "Log out of a Salesforce org"
+        },
+        {
+            "name": "open",
+            "description": "Open a Salesforce org in a browser"
+        },
+        {
+            "name": "package_install",
+            "description": "Install or upgrade a package version in a Salesforce org"
+        },
+        {
+            "name": "package_uninstall",
+            "description": "Uninstall a second-generation package from a Salesforce org"
+        },
+        {
+            "name": "schema_generate_field",
+            "description": "Generate metadata source files for a new custom field on a specified object"
+        },
+        {
+            "name": "schema_generate_sobject",
+            "description": "Generate metadata source files for a new custom object"
+        },
+        {
+            "name": "schema_generate_tab",
+            "description": "Generate metadata source files for a new custom tab on a custom object"
+        }
+    ],
+    "compatibility": {
+        "platforms": ["win32", "darwin", "linux"],
+        "node": ">=18.0.0"
+    }
+}
