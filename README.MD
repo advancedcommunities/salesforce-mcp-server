@@ -1,8 +1,13 @@
-# SF MCP Server
+# Salesforce MCP Server
+
+[![NPM Version](https://img.shields.io/npm/v/@advanced-communities/salesforce-mcp-server)](https://www.npmjs.com/package/@advanced-communities/salesforce-mcp-server)
+[![License](https://img.shields.io/npm/l/@advanced-communities/salesforce-mcp-server)](https://github.com/akutishevsky/salesforce-mcp-server/blob/main/LICENSE)
 
 ## What is it
 
-SF MCP Server is a Model Context Protocol (MCP) server that enables AI assistants to interact with Salesforce organizations. It provides a set of tools that allow AI models to execute Apex code, query data, describe objects, and manage Salesforce org connections through the Salesforce CLI.
+Salesforce MCP Server is a Model Context Protocol (MCP) server that enables AI assistants to interact with Salesforce organizations. It provides a set of tools that allow AI models to execute Apex code, query data, describe objects, and manage Salesforce org connections through the Salesforce CLI.
+
+**NPM Package**: [@advanced-communities/salesforce-mcp-server](https://www.npmjs.com/package/@advanced-communities/salesforce-mcp-server)
 
 ### Installation
 
@@ -12,29 +17,44 @@ SF MCP Server is a Model Context Protocol (MCP) server that enables AI assistant
 - [Salesforce CLI (`sf`) installed and configured](https://developer.salesforce.com/tools/salesforcecli)
 - At least one authenticated Salesforce org
 
-#### Option 1: Desktop Extension (DXT) - One-Click Installation (Recommended)
+#### Option 1: NPM Installation (Recommended)
 
-The easiest way to install SF MCP Server is using the Desktop Extension format:
+The easiest way to install Salesforce MCP Server is directly from NPM using `npx`:
+
+```bash
+npx @advanced-communities/salesforce-mcp-server
+```
+
+This command will:
+- Download the latest version from NPM
+- Run the server directly without manual installation
+- Automatically handle all dependencies
+
+**Benefits of NPM Installation:**
+
+- ✅ No manual building required
+- ✅ Always get the latest stable version
+- ✅ Automatic dependency management
+- ✅ Easy updates with `npm update`
+- ✅ No need to clone the repository
+
+#### Option 2: Desktop Extension (DXT) - One-Click Installation
+
+For a fully managed installation experience:
 
 1. Download the latest `salesforce-mcp-server.dxt` file from the [releases page](https://github.com/akutishevsky/salesforce-mcp-server/releases)
 2. Double-click the `.dxt` file to install
 3. The extension will be automatically configured in your AI client
 4. All dependencies will be managed automatically
 
-**Benefits of DXT Installation:**
+#### Option 3: Manual Installation - Build from source
 
-- ✅ One-click installation
-- ✅ Automatic dependency management
-- ✅ Sandboxed execution with security permissions
-- ✅ Easy updates and version management
-- ✅ No manual configuration required
+For development or customization:
 
-#### Option 2: Manual Installation - Build the server file
-
-1. Clone the repository
-2. Navigate to the `salesforce-mcp-server` directory inside it.
-3. Execute the following code: `npm install && npm run build`
-4. The `salesforce-mcp-server/build/index.js` file will be created — this is the server build file you need.
+1. Clone the repository: `git clone https://github.com/akutishevsky/salesforce-mcp-server.git`
+2. Navigate to the directory: `cd salesforce-mcp-server`
+3. Install and build: `npm install && npm run build`
+4. The server will be available at `build/index.js`
 
 #### Add MCP Configuration to your client
 
@@ -45,11 +65,6 @@ To be able to run the MCP Server – you need a client. The client can be any AI
 - [Codex CLI](https://github.com/openai/codex)
 - [VS Code Copilot](https://code.visualstudio.com/docs/copilot/overview)
 - [Cursor](https://cursor.com/downloads)
-
-#### Regarding the `{ABOSULTE_PATH_TO_THE_BUILD_FILE}` on Windows
-
-- Obtain it by clicking at the build file with the right mouse button, and select `Copy as path` option.
-- For Claude Desktop use the copied path with double slashes `\\`
 
 #### Use it with Claude Desktop
 
@@ -68,8 +83,8 @@ To be able to run the MCP Server – you need a client. The client can be any AI
     {
         "mcpServers": {
             "salesforce-mcp-server": {
-                "command": "node",
-                "args": ["{ABOSULTE_PATH_TO_THE_BUILD_FILE}"]
+                "command": "npx",
+                "args": ["@advanced-communities/salesforce-mcp-server"]
             }
         }
     }
@@ -81,8 +96,8 @@ To be able to run the MCP Server – you need a client. The client can be any AI
     {
         "mcpServers": {
             "salesforce-mcp-server": {
-                "command": "node",
-                "args": ["{ABOSULTE_PATH_TO_THE_BUILD_FILE}"],
+                "command": "npx",
+                "args": ["@advanced-communities/salesforce-mcp-server"],
                 "env": {
                     "READ_ONLY": "true",
                     "ALLOWED_ORGS": "dev,qa,staging"
@@ -103,29 +118,29 @@ To be able to run the MCP Server – you need a client. The client can be any AI
     **Basic installation (local scope - default):**
 
     ```shell
-    claude mcp add salesforce-mcp-server node "{ABOSULTE_PATH_TO_THE_BUILD_FILE}"
+    claude mcp add salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server
     ```
 
     **User scope installation (recommended for global access):**
 
     ```shell
-    claude mcp add --scope user salesforce-mcp-server node "{ABOSULTE_PATH_TO_THE_BUILD_FILE}"
+    claude mcp add --scope user salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server
     ```
 
     **With environment variables:**
 
     ```shell
     # Read-only mode (local scope)
-    claude mcp add salesforce-mcp-server node "{ABOSULTE_PATH_TO_THE_BUILD_FILE}" -e READ_ONLY=true
+    claude mcp add salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server -e READ_ONLY=true
 
     # Read-only mode (user scope)
-    claude mcp add --scope user salesforce-mcp-server node "{ABOSULTE_PATH_TO_THE_BUILD_FILE}" -e READ_ONLY=true
+    claude mcp add --scope user salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server -e READ_ONLY=true
 
     # Restrict to specific orgs (user scope)
-    claude mcp add --scope user salesforce-mcp-server node "{ABOSULTE_PATH_TO_THE_BUILD_FILE}" -e ALLOWED_ORGS=dev,qa,staging
+    claude mcp add --scope user salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server -e ALLOWED_ORGS=dev,qa,staging
 
     # Both restrictions (user scope)
-    claude mcp add --scope user salesforce-mcp-server node "{ABOSULTE_PATH_TO_THE_BUILD_FILE}" -e READ_ONLY=true -e ALLOWED_ORGS=production
+    claude mcp add --scope user salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server -e READ_ONLY=true -e ALLOWED_ORGS=production
     ```
 
     > **Note**: By default, Claude Code installs MCP servers in local scope (current directory). Use `--scope user` to install globally for all projects.
@@ -138,8 +153,8 @@ though the Codex format is slightly different since it uses TOML rather than JSO
 
 ```toml
 [mcp_servers.salesforce-mcp-server]
-command = "node"
-args = ["{ABOSULTE_PATH_TO_THE_BUILD_FILE}"]
+command = "npx"
+args = ["@advanced-communities/salesforce-mcp-server"]
 
 # Optional: Add environment variables
 [mcp_servers.salesforce-mcp-server.env]
@@ -152,7 +167,7 @@ ALLOWED_ORGS = "dev,qa,staging"
 1. In VS Code, open the Command Palette by pressing `Command + Shift + P` or `Ctrl + Shift + P`.
 2. Type "MCP Add", select the `MCP: Add Server` option.
 3. Select `Command(stdio)` option.
-4. Put the `node {ABOSULTE_PATH_TO_THE_BUILD_FILE}` into the command input.
+4. Put the `npx @advanced-communities/salesforce-mcp-server` into the command input.
 5. For MCP Server Id put `salesforce-mcp-server`.
 6. Choose either `Global` or `Workspace` installation option.
 7. (Optional) To add environment variables, manually edit the VS Code settings:
@@ -161,8 +176,8 @@ ALLOWED_ORGS = "dev,qa,staging"
     ```json
     "mcp.servers": {
       "salesforce-mcp-server": {
-        "command": "node",
-        "args": ["{ABOSULTE_PATH_TO_THE_BUILD_FILE}"],
+        "command": "npx",
+        "args": ["@advanced-communities/salesforce-mcp-server"],
         "env": {
           "READ_ONLY": "true",
           "ALLOWED_ORGS": "dev,qa"
@@ -183,8 +198,8 @@ ALLOWED_ORGS = "dev,qa,staging"
     {
         "mcpServers": {
             "salesforce-mcp-server": {
-                "command": "node",
-                "args": ["{ABOSULTE_PATH_TO_THE_BUILD_FILE}"]
+                "command": "npx",
+                "args": ["@advanced-communities/salesforce-mcp-server"]
             }
         }
     }
@@ -196,8 +211,8 @@ ALLOWED_ORGS = "dev,qa,staging"
     {
         "mcpServers": {
             "salesforce-mcp-server": {
-                "command": "node",
-                "args": ["{ABOSULTE_PATH_TO_THE_BUILD_FILE}"],
+                "command": "npx",
+                "args": ["@advanced-communities/salesforce-mcp-server"],
                 "env": {
                     "READ_ONLY": "true",
                     "ALLOWED_ORGS": "production,staging"
@@ -231,8 +246,8 @@ When ALLOWED_ORGS is set, the `list_connected_salesforce_orgs` tool will only sh
 {
     "mcpServers": {
         "salesforce-mcp-server": {
-            "command": "node",
-            "args": ["path/to/build/index.js"],
+            "command": "npx",
+            "args": ["@advanced-communities/salesforce-mcp-server"],
             "env": {
                 "READ_ONLY": "true"
             }
@@ -247,8 +262,8 @@ When ALLOWED_ORGS is set, the `list_connected_salesforce_orgs` tool will only sh
 {
     "mcpServers": {
         "salesforce-mcp-server": {
-            "command": "node",
-            "args": ["path/to/build/index.js"],
+            "command": "npx",
+            "args": ["@advanced-communities/salesforce-mcp-server"],
             "env": {
                 "ALLOWED_ORGS": "dev,qa,staging"
             }
@@ -263,8 +278,8 @@ When ALLOWED_ORGS is set, the `list_connected_salesforce_orgs` tool will only sh
 {
     "mcpServers": {
         "salesforce-mcp-server": {
-            "command": "node",
-            "args": ["path/to/build/index.js"],
+            "command": "npx",
+            "args": ["@advanced-communities/salesforce-mcp-server"],
             "env": {
                 "READ_ONLY": "true",
                 "ALLOWED_ORGS": "production,prod-backup"
