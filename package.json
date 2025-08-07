@@ -10,7 +10,7 @@
     },
     "keywords": [],
     "author": "",
-    "license": "ISC",
+    "license": "MIT",
     "type": "module",
     "bin": {
         "salesforce-mcp-server": "build/index.js"
