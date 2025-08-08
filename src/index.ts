@@ -20,7 +20,7 @@ function buildServerDescription(): string {
     const allowedOrgs = permissions.getAllowedOrgs();
     const permissionInfo = [];
 
-    let description = `Salesforce MCP Server v1.2.2 - AI-powered Salesforce automation via CLI integration\n`;
+    let description = `Salesforce MCP Server v1.2.3 - AI-powered Salesforce automation via CLI integration\n`;
     description += `Capabilities: Apex execution, SOQL queries, org management, code testing & coverage\n`;
 
     if (readOnlyMode) {
@@ -44,7 +44,7 @@ function buildServerDescription(): string {
 
 const server = new McpServer({
     name: "salesforce-mcp-server",
-    version: "1.2.2",
+    version: "1.2.3",
     description: buildServerDescription(),
     capabilities: {
         tools: {},

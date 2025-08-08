@@ -1,7 +1,7 @@
 # Salesforce MCP Server
 
 [![NPM Version](https://img.shields.io/npm/v/@advanced-communities/salesforce-mcp-server)](https://www.npmjs.com/package/@advanced-communities/salesforce-mcp-server)
-[![License](https://img.shields.io/npm/l/@advanced-communities/salesforce-mcp-server)](https://github.com/akutishevsky/salesforce-mcp-server/blob/main/LICENSE)
+[![License](https://img.shields.io/npm/l/@advanced-communities/salesforce-mcp-server)](https://github.com/advancedcommunities/salesforce-mcp-server/blob/main/LICENSE)
 
 ## What is it
 
@@ -42,7 +42,7 @@ This command will:
 
 For a fully managed installation experience:
 
-1. Download the latest `salesforce-mcp-server.dxt` file from the [releases page](https://github.com/akutishevsky/salesforce-mcp-server/releases)
+1. Download the latest `salesforce-mcp-server.dxt` file from the [releases page](https://github.com/advancedcommunities/salesforce-mcp-server/releases)
 2. Double-click the `.dxt` file to install
 3. The extension will be automatically configured in your AI client
 4. All dependencies will be managed automatically
@@ -51,7 +51,7 @@ For a fully managed installation experience:
 
 For development or customization:
 
-1. Clone the repository: `git clone https://github.com/akutishevsky/salesforce-mcp-server.git`
+1. Clone the repository: `git clone https://github.com/advancedcommunities/salesforce-mcp-server.git`
 2. Navigate to the directory: `cd salesforce-mcp-server`
 3. Install and build: `npm install && npm run build`
 4. The server will be available at `build/index.js`

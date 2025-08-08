@@ -1,6 +1,6 @@
 {
     "name": "@advanced-communities/salesforce-mcp-server",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "description": "MCP server enabling AI assistants to interact with Salesforce orgs through the Salesforce CLI",
     "main": "./src/index.ts",
     "scripts": {
@@ -11,6 +11,10 @@
     "keywords": [],
     "author": "",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/advancedcommunities/salesforce-mcp-server.git"
+    },
     "type": "module",
     "bin": {
         "salesforce-mcp-server": "build/index.js"
