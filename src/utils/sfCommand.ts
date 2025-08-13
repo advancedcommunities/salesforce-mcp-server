@@ -51,7 +51,7 @@ export function executeSfCommand(command: string): Promise<any> {
     const fullCommand = command.replace(/^sf\s+/, `"${sfPath}" `);
 
     return new Promise((resolve, reject) => {
-        exec(fullCommand, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+        exec(fullCommand, { maxBuffer: 50 * 1024 * 1024 }, (error, stdout, stderr) => {
             if (error) {
                 if (error.message.includes("command not found") || error.message.includes("is not recognized")) {
                     reject(new Error(
@@ -82,7 +82,7 @@ export function executeSfCommandRaw(command: string): Promise<string> {
     const fullCommand = command.replace(/^sf\s+/, `"${sfPath}" `);
 
     return new Promise((resolve, reject) => {
-        exec(fullCommand, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+        exec(fullCommand, { maxBuffer: 50 * 1024 * 1024 }, (error, stdout, stderr) => {
             if (error) {
                 if (error.message.includes("command not found") || error.message.includes("is not recognized")) {
                     reject(new Error(
