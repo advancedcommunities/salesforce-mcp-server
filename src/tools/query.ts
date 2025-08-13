@@ -56,7 +56,7 @@ const executeSoqlQueryToFile = async (
 export const registerQueryTools = (server: McpServer) => {
     server.tool(
         "query_records",
-        "Query records from a Salesforce SObject. This command allows you to execute a SOQL query against a specified Salesforce SObject in a given Org. You can specify the SELECT clause (fields, functions like COUNT(), aggregations, etc.), an optional WHERE clause, and an optional limit on the number of records returned. The results are returned in JSON format, making it easy to work with the data in your application or script.",
+        "Query records from a Salesforce SObject. This command allows you to execute a SOQL query against a specified Salesforce SObject in a given Org. You can specify the SELECT clause (fields, functions like COUNT(), aggregations, etc.), an optional WHERE clause, and an optional limit on the number of records returned. The results are returned in JSON format, making it easy to work with the data in your application or script. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
         {
             input: z.object({
                 targetOrg: z
@@ -131,7 +131,7 @@ export const registerQueryTools = (server: McpServer) => {
 
     server.tool(
         "query_records_to_file",
-        "Query records from a Salesforce SObject and save to a file. This command allows you to execute a SOQL query against a specified Salesforce SObject in a given Org and save the results to a file. You can specify the SELECT clause (fields, functions like COUNT(), aggregations, etc.), an optional WHERE clause, and save the results in various formats. The results can be saved in CSV format by default, or in other formats if specified.",
+        "Query records from a Salesforce SObject and save to a file. This command allows you to execute a SOQL query against a specified Salesforce SObject in a given Org and save the results to a file. You can specify the SELECT clause (fields, functions like COUNT(), aggregations, etc.), an optional WHERE clause, and save the results in various formats. The results can be saved in CSV format by default, or in other formats if specified. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
         {
             input: z.object({
                 targetOrg: z
