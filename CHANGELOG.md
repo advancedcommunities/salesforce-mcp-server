@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-08-13
+
+### Enhanced
+
+- **Query Tools**: Updated `query_records` and `query_records_to_file` tool descriptions to instruct Claude Code to always execute `sobject_list` first before running SOQL queries for better object discovery
+
+### Fixed
+
+- Resolved buffer overflow errors when querying large datasets by increasing `maxBuffer` limit from 10MB to 50MB
+
 ## [1.2.2] - 2025-08-07
 
 ### Changed

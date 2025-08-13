@@ -44,7 +44,7 @@ function buildServerDescription(): string {
 
 const server = new McpServer({
     name: "salesforce-mcp-server",
-    version: "1.2.3",
+    version: "1.2.4",
     description: buildServerDescription(),
     capabilities: {
         tools: {},
