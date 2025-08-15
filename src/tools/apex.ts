@@ -244,6 +244,17 @@ const generateTrigger = async (
     }
 };
 
+const apexLogList = async (targetOrg: string) => {
+    let sfCommand = `sf apex log list --target-org ${targetOrg} --json `;
+
+    try {
+        const result = await executeSfCommand(sfCommand);
+        return result;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const registerApexTools = (server: McpServer) => {
     server.tool(
         "execute_anonymous_apex",
@@ -619,6 +630,33 @@ export const registerApexTools = (server: McpServer) => {
                 sObjectName || "",
                 outputDir || ""
             );
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(result),
+                    },
+                ],
+            };
+        }
+    );
+
+    server.tool(
+        "apex_log_list",
+        "Fetch the list of apex debug logs returning the logs with their IDs.",
+        {
+            input: z.object({
+                targetOrg: z
+                    .string()
+                    .describe(
+                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                    ),
+            }),
+        },
+        async ({ input }) => {
+            const { targetOrg } = input;
+
+            const result = await apexLogList(targetOrg);
             return {
                 content: [
                     {
