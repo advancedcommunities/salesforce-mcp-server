@@ -255,6 +255,31 @@ const apexLogList = async (targetOrg: string) => {
     }
 };
 
+const apexGetLog = async (
+    targetOrg: string,
+    logId: string,
+    recentLogsNumber: number
+) => {
+    let sfCommand = `sf apex get log --target-org ${targetOrg} --json `;
+
+    const hasLogId = logId && logId.length > 0;
+
+    if (hasLogId) {
+        sfCommand += `--log-id ${logId} `;
+    }
+
+    if (!hasLogId && recentLogsNumber !== 0) {
+        sfCommand += `--number ${recentLogsNumber}`;
+    }
+
+    try {
+        const result = await executeSfCommand(sfCommand);
+        return result;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const registerApexTools = (server: McpServer) => {
     server.tool(
         "execute_anonymous_apex",
@@ -657,6 +682,47 @@ export const registerApexTools = (server: McpServer) => {
             const { targetOrg } = input;
 
             const result = await apexLogList(targetOrg);
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(result),
+                    },
+                ],
+            };
+        }
+    );
+
+    server.tool(
+        "apex_get_log",
+        "Fetch the specified log or given number of most recent logs from the org.",
+        {
+            input: z.object({
+                targetOrg: z
+                    .string()
+                    .describe(
+                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                    ),
+                logId: z
+                    .string()
+                    .optional()
+                    .describe(
+                        "ID of the specific log to display. Execute the apex_get_logs tool before to get the ids."
+                    ),
+                recentLogsNumber: z
+                    .number()
+                    .optional()
+                    .describe("Number of the most recent logs to display."),
+            }),
+        },
+        async ({ input }) => {
+            const { targetOrg, logId, recentLogsNumber } = input;
+
+            const result = await apexGetLog(
+                targetOrg,
+                logId || "",
+                recentLogsNumber || 0
+            );
             return {
                 content: [
                     {
