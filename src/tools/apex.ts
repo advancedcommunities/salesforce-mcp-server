@@ -221,6 +221,29 @@ const generateClass = async (name: string, outputDir: string) => {
     }
 };
 
+const generateTrigger = async (
+    name: string,
+    sObjectName: string,
+    outputDir: string
+) => {
+    let sfCommand = `sf apex generate trigger --name ${name} --json `;
+
+    if (sObjectName && sObjectName.length > 0) {
+        sfCommand += `--sobject ${sObjectName} `;
+    }
+
+    if (outputDir && outputDir.length > 0) {
+        sfCommand += `--output-dir ${outputDir}`;
+    }
+
+    try {
+        const result = await executeSfCommand(sfCommand);
+        return result;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const registerApexTools = (server: McpServer) => {
     server.tool(
         "execute_anonymous_apex",
@@ -539,6 +562,63 @@ export const registerApexTools = (server: McpServer) => {
             }
 
             const result = await generateClass(name, outputDir || "");
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(result),
+                    },
+                ],
+            };
+        }
+    );
+
+    server.tool(
+        "generate_trigger",
+        'Generates the Apex trigger *.trigger file and associated metadata file. These files must be contained in a parent directory called "triggers" in your package directory. Either run this command from an existing directory of this name, or use the --output-dir flag to generate one or point to an existing one. If you don\'t specify the --sobject flag, the .trigger file contains the generic placeholder SOBJECT; replace it with the Salesforce object you want to generate a trigger for. If you don\'t specify --event, "before insert" is used.',
+        {
+            input: z.object({
+                name: z
+                    .string()
+                    .describe(
+                        "Name of the generated Apex trigger. The name can be up to 40 characters and must start with a letter."
+                    ),
+                sObjectName: z
+                    .string()
+                    .optional()
+                    .describe("Salesforce object to generate a trigger on."),
+                outputDir: z
+                    .string()
+                    .optional()
+                    .describe(
+                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory."
+                    ),
+            }),
+        },
+        async ({ input }) => {
+            const { name, sObjectName, outputDir } = input;
+
+            if (permissions.isReadOnly()) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                compiled: false,
+                                compileProblem:
+                                    "Operation not allowed: Cannot generate Apex trigger in READ_ONLY mode",
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const result = await generateTrigger(
+                name,
+                sObjectName || "",
+                outputDir || ""
+            );
             return {
                 content: [
                     {
