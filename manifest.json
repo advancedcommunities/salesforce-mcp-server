@@ -171,6 +171,10 @@
         {
             "name": "open_record",
             "description": "Open a Salesforce record in a browser"
+        },
+        {
+            "name": "search_records",
+            "description": "Execute SOSL text-based search queries across multiple Salesforce objects"
         }
     ],
     "compatibility": {

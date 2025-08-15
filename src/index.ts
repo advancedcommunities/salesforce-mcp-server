@@ -10,6 +10,7 @@ import { registerCodeAnalyzerTools } from "./tools/code-analyzer.js";
 import { registerScannerTools } from "./tools/scanner.js";
 import { registerPackageTools } from "./tools/package.js";
 import { registerSchemaTools } from "./tools/schema.js";
+import { registerSearchTools } from "./tools/search.js";
 import { permissions } from "./config/permissions.js";
 
 /**
@@ -38,7 +39,7 @@ function buildServerDescription(): string {
         description += `Security: Full access enabled for all authenticated orgs`;
     }
 
-    description += `\nTools: 28 available (apex, query, sobject, org management, records, admin, code analyzer, scanner, package, schema)`;
+    description += `\nTools: 29 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema)`;
 
     return description;
 }
@@ -62,6 +63,7 @@ registerCodeAnalyzerTools(server);
 registerScannerTools(server);
 registerPackageTools(server);
 registerSchemaTools(server);
+registerSearchTools(server);
 
 async function main() {
     const transport = new StdioServerTransport();
