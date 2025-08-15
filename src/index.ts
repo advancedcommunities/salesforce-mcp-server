@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerApexTools } from "./tools/apex.js";
 import { registerOrgTools } from "./tools/orgs.js";
+import { registerOrgTools as registerRecordTools } from "./tools/records.js";
 import { registerSObjectTools } from "./tools/sobjects.js";
 import { registerQueryTools } from "./tools/query.js";
 import { registerAdminTools } from "./tools/admin.js";
@@ -37,7 +38,7 @@ function buildServerDescription(): string {
         description += `Security: Full access enabled for all authenticated orgs`;
     }
 
-    description += `\nTools: 27 available (apex, query, sobject, org management, admin, code analyzer, scanner, package, schema)`;
+    description += `\nTools: 28 available (apex, query, sobject, org management, records, admin, code analyzer, scanner, package, schema)`;
 
     return description;
 }
@@ -53,6 +54,7 @@ const server = new McpServer({
 
 registerApexTools(server);
 registerOrgTools(server);
+registerRecordTools(server);
 registerSObjectTools(server);
 registerQueryTools(server);
 registerAdminTools(server);
