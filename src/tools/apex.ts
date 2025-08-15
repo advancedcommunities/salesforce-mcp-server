@@ -16,7 +16,7 @@ import { executeSfCommand, executeSfCommandRaw } from "../utils/sfCommand.js";
 
 const executeAnonymousApex = async (
     targetOrg: string,
-    code: string
+    code: string,
 ): Promise<ExecuteAnonymousResponse> => {
     if (!code || code.trim() === "") {
         throw new Error("Code cannot be empty");
@@ -41,14 +41,14 @@ const executeAnonymousApex = async (
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
 
         if (error.message?.includes("expired access/refresh token")) {
             throw new Error(
                 `Authentication expired for org '${targetOrg}'. ` +
-                    `Please run 'sf org login --alias ${targetOrg}' to re-authenticate.`
+                    `Please run 'sf org login --alias ${targetOrg}' to re-authenticate.`,
             );
         }
 
@@ -64,7 +64,7 @@ const runApexTests = async (
     tests?: string,
     codeCoverage: boolean = true,
     outputFormat: ResultFormat = ResultFormat.json,
-    synchronous: boolean = false
+    synchronous: boolean = false,
 ): Promise<TestResult | TestRunIdResult> => {
     try {
         const connection = await getConnection(targetOrg);
@@ -74,30 +74,30 @@ const runApexTests = async (
             const syncConfig = await testService.buildSyncPayload(
                 testLevel,
                 tests,
-                classNames
+                classNames,
             );
             return await testService.runTestSynchronous(
                 syncConfig,
-                codeCoverage
+                codeCoverage,
             );
         } else {
             const asyncConfig = await testService.buildAsyncPayload(
                 testLevel,
                 tests,
                 classNames,
-                testSuites
+                testSuites,
             );
             return await testService.runTestAsynchronous(
                 asyncConfig,
                 codeCoverage,
-                false
+                false,
             );
         }
     } catch (error: any) {
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
         throw new Error(`Failed to run Apex tests: ${error.message}`);
@@ -107,7 +107,7 @@ const runApexTests = async (
 const getTestResults = async (
     targetOrg: string,
     testRunId: string,
-    codeCoverage: boolean = true
+    codeCoverage: boolean = true,
 ): Promise<TestResult> => {
     try {
         const connection = await getConnection(targetOrg);
@@ -118,7 +118,7 @@ const getTestResults = async (
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
         throw new Error(`Failed to get test results: ${error.message}`);
@@ -128,7 +128,7 @@ const getTestResults = async (
 const getCodeCoverage = async (
     targetOrg: string,
     type: "org-wide" | "from-tests" = "org-wide",
-    testRunId?: string
+    testRunId?: string,
 ): Promise<any> => {
     try {
         const connection = await getConnection(targetOrg);
@@ -136,24 +136,24 @@ const getCodeCoverage = async (
         if (type === "from-tests") {
             if (!testRunId) {
                 throw new Error(
-                    "Test run ID is required for coverage from test results"
+                    "Test run ID is required for coverage from test results",
                 );
             }
             const testService = new TestService(connection);
             const result = await testService.reportAsyncResults(
                 testRunId,
-                true
+                true,
             );
 
             if (result.codecoverage) {
                 const totalLines = result.codecoverage.reduce(
                     (sum, cov) =>
                         sum + cov.numLinesCovered + cov.numLinesUncovered,
-                    0
+                    0,
                 );
                 const coveredLines = result.codecoverage.reduce(
                     (sum, cov) => sum + cov.numLinesCovered,
-                    0
+                    0,
                 );
                 const percentage =
                     totalLines > 0
@@ -199,7 +199,7 @@ const getCodeCoverage = async (
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
         throw new Error(`Failed to get code coverage: ${error.message}`);
@@ -224,7 +224,7 @@ const generateClass = async (name: string, outputDir: string) => {
 const generateTrigger = async (
     name: string,
     sObjectName: string,
-    outputDir: string
+    outputDir: string,
 ) => {
     let sfCommand = `sf apex generate trigger --name ${name} --json `;
 
@@ -258,7 +258,7 @@ const apexLogList = async (targetOrg: string) => {
 const apexGetLog = async (
     targetOrg: string,
     logId: string,
-    recentLogsNumber: number
+    recentLogsNumber: number,
 ) => {
     let sfCommand = `sf apex get log --target-org ${targetOrg} --json `;
 
@@ -289,7 +289,7 @@ export const registerApexTools = (server: McpServer) => {
                 targetOrg: z
                     .string()
                     .describe(
-                        "Target Salesforce Org Alias to execute the code against"
+                        "Target Salesforce Org Alias to execute the code against",
                     ),
                 code: z
                     .string()
@@ -341,7 +341,7 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -352,7 +352,7 @@ export const registerApexTools = (server: McpServer) => {
                 targetOrg: z
                     .string()
                     .describe(
-                        "Target Salesforce Org Alias to run tests against"
+                        "Target Salesforce Org Alias to run tests against",
                     ),
                 testLevel: z
                     .enum([
@@ -361,26 +361,26 @@ export const registerApexTools = (server: McpServer) => {
                         "RunSpecifiedTests",
                     ])
                     .describe(
-                        "Test level - RunLocalTests (all except managed packages), RunAllTestsInOrg (all tests), or RunSpecifiedTests (specific tests only)"
+                        "Test level - RunLocalTests (all except managed packages), RunAllTestsInOrg (all tests), or RunSpecifiedTests (specific tests only)",
                     )
                     .default("RunLocalTests"),
                 classNames: z
                     .string()
                     .optional()
                     .describe(
-                        "Comma-separated list of test class names to run (required for RunSpecifiedTests)"
+                        "Comma-separated list of test class names to run (required for RunSpecifiedTests)",
                     ),
                 testSuites: z
                     .string()
                     .optional()
                     .describe(
-                        "Comma-separated list of test suite names to run"
+                        "Comma-separated list of test suite names to run",
                     ),
                 tests: z
                     .string()
                     .optional()
                     .describe(
-                        'JSON string specifying specific test methods to run, e.g., [{"className":"TestClass","testMethods":["testMethod1"]}]'
+                        'JSON string specifying specific test methods to run, e.g., [{"className":"TestClass","testMethods":["testMethod1"]}]',
                     ),
                 codeCoverage: z
                     .boolean()
@@ -392,7 +392,7 @@ export const registerApexTools = (server: McpServer) => {
                     .optional()
                     .default(false)
                     .describe(
-                        "Whether to run tests synchronously (wait for completion) or asynchronously"
+                        "Whether to run tests synchronously (wait for completion) or asynchronously",
                     ),
             }),
         },
@@ -435,7 +435,7 @@ export const registerApexTools = (server: McpServer) => {
                 input.tests,
                 input.codeCoverage,
                 ResultFormat.json,
-                input.synchronous
+                input.synchronous,
             );
             return {
                 content: [
@@ -445,7 +445,7 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -456,19 +456,19 @@ export const registerApexTools = (server: McpServer) => {
                 targetOrg: z
                     .string()
                     .describe(
-                        "Target Salesforce Org Alias where the tests were run"
+                        "Target Salesforce Org Alias where the tests were run",
                     ),
                 testRunId: z
                     .string()
                     .describe(
-                        "The test run ID returned from a previous asynchronous test execution"
+                        "The test run ID returned from a previous asynchronous test execution",
                     ),
                 codeCoverage: z
                     .boolean()
                     .optional()
                     .default(true)
                     .describe(
-                        "Whether to include code coverage information in the results"
+                        "Whether to include code coverage information in the results",
                     ),
             }),
         },
@@ -491,7 +491,7 @@ export const registerApexTools = (server: McpServer) => {
             const result = await getTestResults(
                 input.targetOrg,
                 input.testRunId,
-                input.codeCoverage
+                input.codeCoverage,
             );
             return {
                 content: [
@@ -501,7 +501,7 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -512,19 +512,19 @@ export const registerApexTools = (server: McpServer) => {
                 targetOrg: z
                     .string()
                     .describe(
-                        "Target Salesforce Org Alias to get coverage from"
+                        "Target Salesforce Org Alias to get coverage from",
                     ),
                 coverageType: z
                     .enum(["org-wide", "from-tests"])
                     .default("org-wide")
                     .describe(
-                        "Type of coverage to retrieve: org-wide (overall org percentage) or from-tests (coverage from a specific test run)"
+                        "Type of coverage to retrieve: org-wide (overall org percentage) or from-tests (coverage from a specific test run)",
                     ),
                 testRunId: z
                     .string()
                     .optional()
                     .describe(
-                        "Test run ID (required when coverageType is 'from-tests')"
+                        "Test run ID (required when coverageType is 'from-tests')",
                     ),
             }),
         },
@@ -547,7 +547,7 @@ export const registerApexTools = (server: McpServer) => {
             const result = await getCodeCoverage(
                 input.targetOrg,
                 input.coverageType as "org-wide" | "from-tests",
-                input.testRunId
+                input.testRunId,
             );
             return {
                 content: [
@@ -557,7 +557,7 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -568,13 +568,13 @@ export const registerApexTools = (server: McpServer) => {
                 name: z
                     .string()
                     .describe(
-                        "Name of the generated Apex class. The name can be up to 40 characters and must start with a letter."
+                        "Name of the generated Apex class. The name can be up to 40 characters and must start with a letter.",
                     ),
                 outputDir: z
                     .string()
                     .optional()
                     .describe(
-                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory."
+                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory.",
                     ),
             }),
         },
@@ -606,7 +606,7 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -617,7 +617,7 @@ export const registerApexTools = (server: McpServer) => {
                 name: z
                     .string()
                     .describe(
-                        "Name of the generated Apex trigger. The name can be up to 40 characters and must start with a letter."
+                        "Name of the generated Apex trigger. The name can be up to 40 characters and must start with a letter.",
                     ),
                 sObjectName: z
                     .string()
@@ -627,7 +627,7 @@ export const registerApexTools = (server: McpServer) => {
                     .string()
                     .optional()
                     .describe(
-                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory."
+                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory.",
                     ),
             }),
         },
@@ -653,7 +653,7 @@ export const registerApexTools = (server: McpServer) => {
             const result = await generateTrigger(
                 name,
                 sObjectName || "",
-                outputDir || ""
+                outputDir || "",
             );
             return {
                 content: [
@@ -663,7 +663,7 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -674,12 +674,26 @@ export const registerApexTools = (server: McpServer) => {
                 targetOrg: z
                     .string()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set.",
                     ),
             }),
         },
         async ({ input }) => {
             const { targetOrg } = input;
+
+            if (!permissions.isOrgAllowed(targetOrg)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: `Access to org '${targetOrg}' is not allowed`,
+                            }),
+                        },
+                    ],
+                };
+            }
 
             const result = await apexLogList(targetOrg);
             return {
@@ -690,7 +704,7 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -701,13 +715,13 @@ export const registerApexTools = (server: McpServer) => {
                 targetOrg: z
                     .string()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set.",
                     ),
                 logId: z
                     .string()
                     .optional()
                     .describe(
-                        "ID of the specific log to display. Execute the apex_get_logs tool before to get the ids."
+                        "ID of the specific log to display. Execute the apex_get_logs tool before to get the ids.",
                     ),
                 recentLogsNumber: z
                     .number()
@@ -718,10 +732,24 @@ export const registerApexTools = (server: McpServer) => {
         async ({ input }) => {
             const { targetOrg, logId, recentLogsNumber } = input;
 
+            if (!permissions.isOrgAllowed(targetOrg)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: `Access to org '${targetOrg}' is not allowed`,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             const result = await apexGetLog(
                 targetOrg,
                 logId || "",
-                recentLogsNumber || 0
+                recentLogsNumber || 0,
             );
             return {
                 content: [
@@ -731,6 +759,6 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 };
