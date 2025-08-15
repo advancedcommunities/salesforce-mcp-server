@@ -26,6 +26,7 @@ npx @advanced-communities/salesforce-mcp-server
 ```
 
 This command will:
+
 - Download the latest version from NPM
 - Run the server directly without manual installation
 - Automatically handle all dependencies
@@ -386,7 +387,47 @@ Get code coverage information for a Salesforce org.
 - "What's the overall code coverage in my org?"
 - "Show code coverage from the latest test run"
 
-#### 10. Login to Salesforce Org
+#### 10. Generate Apex Class
+
+Generate metadata source files for a new Apex class.
+
+**Example prompts:**
+
+- "Generate a new Apex class called AccountHelper"
+- "Create an Apex controller class named MyCustomController"
+- "Generate a batch class called DataCleanupBatch in the classes directory"
+
+#### 11. Generate Apex Trigger
+
+Generate metadata source files for a new Apex trigger.
+
+**Example prompts:**
+
+- "Generate a trigger called AccountTrigger for the Account object"
+- "Create a before insert trigger for the Contact object"
+- "Generate an after update trigger for MyCustomObject\_\_c"
+
+#### 12. List Apex Logs
+
+Fetch and list Apex debug logs from the org.
+
+**Example prompts:**
+
+- "Show me all Apex debug logs in my dev org"
+- "List the recent debug logs from production"
+- "Get the IDs of debug logs in sandbox"
+
+#### 13. Get Apex Log
+
+Fetch specific Apex debug logs or recent logs from the org.
+
+**Example prompts:**
+
+- "Get the debug log with ID 07L...."
+- "Show me the last 5 debug logs from my org"
+- "Fetch the most recent debug log from production"
+
+#### 14. Login to Salesforce Org
 
 Authenticate and login to a Salesforce org via web browser.
 
@@ -395,7 +436,7 @@ Authenticate and login to a Salesforce org via web browser.
 - "Login to a new production org with alias 'prod'"
 - "Connect to a sandbox with alias 'dev-sandbox'"
 
-#### 11. Get Server Permissions
+#### 15. Get Server Permissions
 
 Check current server permission settings.
 
@@ -404,7 +445,7 @@ Check current server permission settings.
 - "Show me the current server permissions"
 - "What orgs am I allowed to access?"
 
-#### 12. Run Code Analyzer
+#### 16. Run Code Analyzer
 
 Analyze your code with configurable rules to ensure good coding practices.
 
@@ -414,7 +455,7 @@ Analyze your code with configurable rules to ensure good coding practices.
 - "Analyze my Lightning Web Components for security issues"
 - "Check PMD rules on the force-app directory"
 
-#### 13. List Code Analyzer Rules
+#### 17. List Code Analyzer Rules
 
 List available rules for code analysis.
 
@@ -424,7 +465,7 @@ List available rules for code analysis.
 - "List security-related code analysis rules"
 - "What ESLint rules are available?"
 
-#### 14. Scanner Run
+#### 18. Scanner Run
 
 Scan a codebase with various security and quality rules using multiple engines.
 
@@ -435,7 +476,7 @@ Scan a codebase with various security and quality rules using multiple engines.
 - "Check for retire-js vulnerabilities in my JavaScript files"
 - "Scan with high severity threshold and save results to CSV"
 
-#### 15. Scanner Run DFA
+#### 19. Scanner Run DFA
 
 Run Salesforce Graph Engine for data flow analysis to identify complex security issues.
 
@@ -446,7 +487,7 @@ Run Salesforce Graph Engine for data flow analysis to identify complex security 
 - "Perform path-based security analysis on all Apex classes"
 - "Run DFA with pilot rules enabled"
 
-#### 16. Assign Permission Set
+#### 20. Assign Permission Set
 
 Assign permission sets to one or more org users.
 
@@ -456,7 +497,7 @@ Assign permission sets to one or more org users.
 - "Grant CloudHouse and AppBuilder permission sets to user@example.com"
 - "Assign multiple permission sets to a list of users in sandbox"
 
-#### 17. Assign Permission Set License
+#### 21. Assign Permission Set License
 
 Assign permission set licenses to org users.
 
@@ -466,7 +507,7 @@ Assign permission set licenses to org users.
 - "Grant Service Cloud permission set license to multiple users"
 - "Assign Platform Event license to the admin user"
 
-#### 18. Display User
+#### 22. Display User
 
 Display information about a Salesforce user including profile, org ID, and access details.
 
@@ -476,7 +517,7 @@ Display information about a Salesforce user including profile, org ID, and acces
 - "Display user details for user@example.com"
 - "Get the profile and access token for the current user"
 
-#### 19. List Metadata
+#### 23. List Metadata
 
 List metadata components and properties of a specified type.
 
@@ -487,7 +528,7 @@ List metadata components and properties of a specified type.
 - "Get all EmailTemplate metadata with API version 60.0"
 - "List Layout components and save to a file"
 
-#### 20. List Metadata Types
+#### 24. List Metadata Types
 
 Display details about all metadata types enabled for your org.
 
@@ -498,7 +539,7 @@ Display details about all metadata types enabled for your org.
 - "Get all enabled metadata types with API version 60.0"
 - "Display metadata types and save to file for reference"
 
-#### 21. Logout
+#### 25. Logout
 
 Log out of a Salesforce org, removing stored authentication.
 
@@ -508,7 +549,7 @@ Log out of a Salesforce org, removing stored authentication.
 - "Remove authentication for sandbox1"
 - "Logout from all connected orgs"
 
-#### 22. Open
+#### 26. Open
 
 Open a Salesforce org in your browser.
 
@@ -520,7 +561,17 @@ Open a Salesforce org in your browser.
 - "Open a Visualforce page /apex/MyPage in production"
 - "Open my FlexiPage in Lightning App Builder"
 
-#### 23. Package Install
+#### 27. Open Record
+
+Open a specific Salesforce record in the browser.
+
+**Example prompts:**
+
+- "Open record 001XX0000XXXXX in my dev org"
+- "Navigate to Account record 001... in production"
+- "Show me the Contact record 003... in the browser"
+
+#### 28. Package Install
 
 Install or upgrade a package version in a Salesforce org.
 
@@ -532,7 +583,7 @@ Install or upgrade a package version in a Salesforce org.
 - "Install package and compile only package Apex code"
 - "Upgrade unlocked package and deprecate removed components"
 
-#### 24. Package Uninstall
+#### 29. Package Uninstall
 
 Uninstall a second-generation package from a Salesforce org.
 
@@ -543,7 +594,7 @@ Uninstall a second-generation package from a Salesforce org.
 - "Uninstall package and wait 5 minutes for completion"
 - "Remove package with spaces in alias from sandbox"
 
-#### 25. Schema Generate Field
+#### 30. Schema Generate Field
 
 Generate metadata source files for a new custom field on a specified object.
 
@@ -554,7 +605,7 @@ Generate metadata source files for a new custom field on a specified object.
 - "Add a new text field 'External ID' to the Contact object"
 - "Generate a lookup field 'Parent Account' on MyObject\_\_c"
 
-#### 26. Schema Generate SObject
+#### 31. Schema Generate SObject
 
 Generate metadata source files for a new custom object.
 
@@ -565,7 +616,7 @@ Generate metadata source files for a new custom object.
 - "Add a new custom object 'Customer Survey' with all optional features enabled"
 - "Generate a custom object 'Product Catalog' without default features"
 
-#### 27. Schema Generate Tab
+#### 32. Schema Generate Tab
 
 Generate metadata source files for a new custom tab on a custom object.
 
@@ -575,6 +626,17 @@ Generate metadata source files for a new custom tab on a custom object.
 - "Generate a custom tab for Invoice\_\_c object with icon 25"
 - "Add a navigation tab for Customer\_\_c with icon 75 in force-app/main/default/tabs"
 - "Create a tab for Product\_\_c custom object with default icon"
+
+#### 33. Search Records
+
+Execute SOSL text-based searches across multiple objects.
+
+**Example prompts:**
+
+- "Search for 'Anna Jones' in all Name fields"
+- "Find records containing 'Acme' across all objects"
+- "Search for phone number '415-555-1234' in Contact and Lead"
+- "Execute SOSL: FIND {Smith} IN ALL FIELDS RETURNING Contact, Lead"
 
 ### Practical Examples
 

@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-08-15
+
+### Added
+
+- **Search Records Tool**: New `search_records` tool for executing SOSL (Salesforce Object Search Language) queries across multiple objects
+    - Supports text-based searches across multiple objects and fields simultaneously
+    - Query execution via inline or file input
+    - Multiple output formats (human, csv, json)
+    - Respects permission settings
+
+- **Apex Generation Tools**: New tools for generating Apex code with metadata
+    - `generate_class` - Generate Apex class files with metadata
+        - Creates .cls and .cls-meta.xml files
+        - Supports custom output directories
+        - Automatic "classes" directory creation
+    - `generate_trigger` - Generate Apex trigger files with metadata
+        - Creates .trigger and .trigger-meta.xml files
+        - Supports sObject specification
+        - Automatic "triggers" directory creation
+
+- **Apex Log Management**: Enhanced debugging capabilities
+    - `apex_log_list` - List all Apex debug logs with IDs
+        - Returns formatted list of available logs
+        - Enables targeted log retrieval
+    - `apex_get_log` - Fetch specific or recent debug logs
+        - Retrieve logs by ID
+        - Get N most recent logs
+        - Full debug output support
+
+- **Record Navigation**: New `open_record` tool
+    - Open specific Salesforce records directly in browser
+    - Supports all standard and custom object records
+    - Uses record ID for direct navigation
+
+### Fixed
+
+- Added permission checks to search_records tool for consistency with other tools
+
 ## [1.2.4] - 2025-08-13
 
 ### Enhanced
