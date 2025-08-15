@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { 
+import {
     ExecuteService,
     TestService,
     TestLevel,
@@ -8,10 +8,11 @@ import {
     type ExecuteAnonymousResponse,
     type ApexExecuteOptions,
     type TestResult,
-    type TestRunIdResult
+    type TestRunIdResult,
 } from "@salesforce/apex-node";
 import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
+import { executeSfCommand, executeSfCommandRaw } from "../utils/sfCommand.js";
 
 const executeAnonymousApex = async (
     targetOrg: string,
@@ -28,30 +29,29 @@ const executeAnonymousApex = async (
     try {
         const connection = await getConnection(targetOrg);
         const executeService = new ExecuteService(connection);
-        
+
         const options: ApexExecuteOptions = {
-            apexCode: code
+            apexCode: code,
         };
-        
+
         const result = await executeService.executeAnonymous(options);
-        
+
         return result;
-        
     } catch (error: any) {
-        if (error.name === 'NoAuthInfoFound') {
+        if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`
             );
         }
-        
-        if (error.message?.includes('expired access/refresh token')) {
+
+        if (error.message?.includes("expired access/refresh token")) {
             throw new Error(
                 `Authentication expired for org '${targetOrg}'. ` +
-                `Please run 'sf org login --alias ${targetOrg}' to re-authenticate.`
+                    `Please run 'sf org login --alias ${targetOrg}' to re-authenticate.`
             );
         }
-        
+
         throw new Error(`Failed to execute Apex: ${error.message}`);
     }
 };
@@ -69,19 +69,35 @@ const runApexTests = async (
     try {
         const connection = await getConnection(targetOrg);
         const testService = new TestService(connection);
-        
+
         if (synchronous) {
-            const syncConfig = await testService.buildSyncPayload(testLevel, tests, classNames);
-            return await testService.runTestSynchronous(syncConfig, codeCoverage);
+            const syncConfig = await testService.buildSyncPayload(
+                testLevel,
+                tests,
+                classNames
+            );
+            return await testService.runTestSynchronous(
+                syncConfig,
+                codeCoverage
+            );
         } else {
-            const asyncConfig = await testService.buildAsyncPayload(testLevel, tests, classNames, testSuites);
-            return await testService.runTestAsynchronous(asyncConfig, codeCoverage, false);
+            const asyncConfig = await testService.buildAsyncPayload(
+                testLevel,
+                tests,
+                classNames,
+                testSuites
+            );
+            return await testService.runTestAsynchronous(
+                asyncConfig,
+                codeCoverage,
+                false
+            );
         }
     } catch (error: any) {
-        if (error.name === 'NoAuthInfoFound') {
+        if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`
             );
         }
         throw new Error(`Failed to run Apex tests: ${error.message}`);
@@ -96,13 +112,13 @@ const getTestResults = async (
     try {
         const connection = await getConnection(targetOrg);
         const testService = new TestService(connection);
-        
+
         return await testService.reportAsyncResults(testRunId, codeCoverage);
     } catch (error: any) {
-        if (error.name === 'NoAuthInfoFound') {
+        if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`
             );
         }
         throw new Error(`Failed to get test results: ${error.message}`);
@@ -111,64 +127,97 @@ const getTestResults = async (
 
 const getCodeCoverage = async (
     targetOrg: string,
-    type: 'org-wide' | 'from-tests' = 'org-wide',
+    type: "org-wide" | "from-tests" = "org-wide",
     testRunId?: string
 ): Promise<any> => {
     try {
         const connection = await getConnection(targetOrg);
-        
-        if (type === 'from-tests') {
+
+        if (type === "from-tests") {
             if (!testRunId) {
-                throw new Error('Test run ID is required for coverage from test results');
+                throw new Error(
+                    "Test run ID is required for coverage from test results"
+                );
             }
             const testService = new TestService(connection);
-            const result = await testService.reportAsyncResults(testRunId, true);
-            
+            const result = await testService.reportAsyncResults(
+                testRunId,
+                true
+            );
+
             if (result.codecoverage) {
-                const totalLines = result.codecoverage.reduce((sum, cov) => sum + cov.numLinesCovered + cov.numLinesUncovered, 0);
-                const coveredLines = result.codecoverage.reduce((sum, cov) => sum + cov.numLinesCovered, 0);
-                const percentage = totalLines > 0 ? ((coveredLines / totalLines) * 100).toFixed(2) : '0.00';
-                
+                const totalLines = result.codecoverage.reduce(
+                    (sum, cov) =>
+                        sum + cov.numLinesCovered + cov.numLinesUncovered,
+                    0
+                );
+                const coveredLines = result.codecoverage.reduce(
+                    (sum, cov) => sum + cov.numLinesCovered,
+                    0
+                );
+                const percentage =
+                    totalLines > 0
+                        ? ((coveredLines / totalLines) * 100).toFixed(2)
+                        : "0.00";
+
                 return {
                     summary: {
                         totalLines,
                         coveredLines,
-                        coveragePercentage: `${percentage}%`
+                        coveragePercentage: `${percentage}%`,
                     },
-                    classes: result.codecoverage.map(cov => ({
+                    classes: result.codecoverage.map((cov) => ({
                         name: cov.name,
                         type: cov.type,
                         percentage: cov.percentage,
                         numLinesCovered: cov.numLinesCovered,
                         numLinesUncovered: cov.numLinesUncovered,
-                        uncoveredLines: cov.uncoveredLines
-                    }))
+                        uncoveredLines: cov.uncoveredLines,
+                    })),
                 };
             } else {
-                return { message: 'No code coverage data available for this test run' };
+                return {
+                    message:
+                        "No code coverage data available for this test run",
+                };
             }
         } else {
             const query = "SELECT PercentCovered FROM ApexOrgWideCoverage";
             const result = await connection.query(query);
-            
+
             if (result.records && result.records.length > 0) {
                 const coverage = (result.records[0] as any).PercentCovered;
-                return { 
+                return {
                     orgWideCoverage: `${coverage}%`,
-                    message: `Organization-wide code coverage is ${coverage}%`
+                    message: `Organization-wide code coverage is ${coverage}%`,
                 };
             } else {
-                return { message: 'Unable to retrieve org-wide coverage' };
+                return { message: "Unable to retrieve org-wide coverage" };
             }
         }
     } catch (error: any) {
-        if (error.name === 'NoAuthInfoFound') {
+        if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`
             );
         }
         throw new Error(`Failed to get code coverage: ${error.message}`);
+    }
+};
+
+const generateClass = async (name: string, outputDir: string) => {
+    let sfCommand = `sf apex generate class --name ${name} --json `;
+
+    if (outputDir && outputDir.length > 0) {
+        sfCommand += `--output-dir ${outputDir}`;
+    }
+
+    try {
+        const result = await executeSfCommand(sfCommand);
+        return result;
+    } catch (error) {
+        throw error;
     }
 };
 
@@ -191,7 +240,7 @@ export const registerApexTools = (server: McpServer) => {
         },
         async ({ input }) => {
             const { targetOrg, code } = input;
-            
+
             // Check permissions
             if (permissions.isReadOnly()) {
                 return {
@@ -201,13 +250,14 @@ export const registerApexTools = (server: McpServer) => {
                             text: JSON.stringify({
                                 success: false,
                                 compiled: false,
-                                compileProblem: "Operation not allowed: Cannot execute anonymous Apex in READ_ONLY mode"
+                                compileProblem:
+                                    "Operation not allowed: Cannot execute anonymous Apex in READ_ONLY mode",
                             }),
                         },
                     ],
                 };
             }
-            
+
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
                     content: [
@@ -216,13 +266,13 @@ export const registerApexTools = (server: McpServer) => {
                             text: JSON.stringify({
                                 success: false,
                                 compiled: false,
-                                compileProblem: `Access denied: Org '${targetOrg}' is not in the allowed list`
+                                compileProblem: `Access denied: Org '${targetOrg}' is not in the allowed list`,
                             }),
                         },
                     ],
                 };
             }
-            
+
             const result = await executeAnonymousApex(targetOrg, code);
             return {
                 content: [
@@ -242,23 +292,37 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
-                    .describe("Target Salesforce Org Alias to run tests against"),
+                    .describe(
+                        "Target Salesforce Org Alias to run tests against"
+                    ),
                 testLevel: z
-                    .enum(["RunLocalTests", "RunAllTestsInOrg", "RunSpecifiedTests"])
-                    .describe("Test level - RunLocalTests (all except managed packages), RunAllTestsInOrg (all tests), or RunSpecifiedTests (specific tests only)")
+                    .enum([
+                        "RunLocalTests",
+                        "RunAllTestsInOrg",
+                        "RunSpecifiedTests",
+                    ])
+                    .describe(
+                        "Test level - RunLocalTests (all except managed packages), RunAllTestsInOrg (all tests), or RunSpecifiedTests (specific tests only)"
+                    )
                     .default("RunLocalTests"),
                 classNames: z
                     .string()
                     .optional()
-                    .describe("Comma-separated list of test class names to run (required for RunSpecifiedTests)"),
+                    .describe(
+                        "Comma-separated list of test class names to run (required for RunSpecifiedTests)"
+                    ),
                 testSuites: z
                     .string()
                     .optional()
-                    .describe("Comma-separated list of test suite names to run"),
+                    .describe(
+                        "Comma-separated list of test suite names to run"
+                    ),
                 tests: z
                     .string()
                     .optional()
-                    .describe("JSON string specifying specific test methods to run, e.g., [{\"className\":\"TestClass\",\"testMethods\":[\"testMethod1\"]}]"),
+                    .describe(
+                        'JSON string specifying specific test methods to run, e.g., [{"className":"TestClass","testMethods":["testMethod1"]}]'
+                    ),
                 codeCoverage: z
                     .boolean()
                     .optional()
@@ -268,7 +332,9 @@ export const registerApexTools = (server: McpServer) => {
                     .boolean()
                     .optional()
                     .default(false)
-                    .describe("Whether to run tests synchronously (wait for completion) or asynchronously")
+                    .describe(
+                        "Whether to run tests synchronously (wait for completion) or asynchronously"
+                    ),
             }),
         },
         async ({ input }) => {
@@ -280,13 +346,14 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: "Operation not allowed: Cannot run Apex tests in READ_ONLY mode"
+                                message:
+                                    "Operation not allowed: Cannot run Apex tests in READ_ONLY mode",
                             }),
                         },
                     ],
                 };
             }
-            
+
             if (!permissions.isOrgAllowed(input.targetOrg)) {
                 return {
                     content: [
@@ -294,13 +361,13 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`
+                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`,
                             }),
                         },
                     ],
                 };
             }
-            
+
             const result = await runApexTests(
                 input.targetOrg,
                 input.testLevel as TestLevel,
@@ -329,15 +396,21 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
-                    .describe("Target Salesforce Org Alias where the tests were run"),
+                    .describe(
+                        "Target Salesforce Org Alias where the tests were run"
+                    ),
                 testRunId: z
                     .string()
-                    .describe("The test run ID returned from a previous asynchronous test execution"),
+                    .describe(
+                        "The test run ID returned from a previous asynchronous test execution"
+                    ),
                 codeCoverage: z
                     .boolean()
                     .optional()
                     .default(true)
-                    .describe("Whether to include code coverage information in the results")
+                    .describe(
+                        "Whether to include code coverage information in the results"
+                    ),
             }),
         },
         async ({ input }) => {
@@ -349,13 +422,13 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`
+                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`,
                             }),
                         },
                     ],
                 };
             }
-            
+
             const result = await getTestResults(
                 input.targetOrg,
                 input.testRunId,
@@ -379,15 +452,21 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
-                    .describe("Target Salesforce Org Alias to get coverage from"),
+                    .describe(
+                        "Target Salesforce Org Alias to get coverage from"
+                    ),
                 coverageType: z
                     .enum(["org-wide", "from-tests"])
                     .default("org-wide")
-                    .describe("Type of coverage to retrieve: org-wide (overall org percentage) or from-tests (coverage from a specific test run)"),
+                    .describe(
+                        "Type of coverage to retrieve: org-wide (overall org percentage) or from-tests (coverage from a specific test run)"
+                    ),
                 testRunId: z
                     .string()
                     .optional()
-                    .describe("Test run ID (required when coverageType is 'from-tests')")
+                    .describe(
+                        "Test run ID (required when coverageType is 'from-tests')"
+                    ),
             }),
         },
         async ({ input }) => {
@@ -399,18 +478,67 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`
+                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`,
                             }),
                         },
                     ],
                 };
             }
-            
+
             const result = await getCodeCoverage(
                 input.targetOrg,
-                input.coverageType as 'org-wide' | 'from-tests',
+                input.coverageType as "org-wide" | "from-tests",
                 input.testRunId
             );
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(result),
+                    },
+                ],
+            };
+        }
+    );
+
+    server.tool(
+        "generate_class",
+        'Generates the Apex *.cls file and associated metadata file. These files must contained in a parent directory called "classes" in your package directory. Either run this command existing directory of this name, or use the --output-dir flag to generate one or point to an existing one.',
+        {
+            input: z.object({
+                name: z
+                    .string()
+                    .describe(
+                        "Name of the generated Apex class. The name can be up to 40 characters and must start with a letter."
+                    ),
+                outputDir: z
+                    .string()
+                    .optional()
+                    .describe(
+                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory."
+                    ),
+            }),
+        },
+        async ({ input }) => {
+            const { name, outputDir } = input;
+
+            if (permissions.isReadOnly()) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                compiled: false,
+                                compileProblem:
+                                    "Operation not allowed: Cannot generate Apex class in READ_ONLY mode",
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const result = await generateClass(name, outputDir || "");
             return {
                 content: [
                     {
