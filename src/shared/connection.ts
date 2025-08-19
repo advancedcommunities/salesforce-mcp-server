@@ -9,6 +9,7 @@ export interface OrgAuthorization {
     orgId?: string;
     instanceUrl?: string;
     isDevHub?: boolean;
+    apiVersion?: string;
 }
 
 /**
@@ -19,25 +20,25 @@ export interface OrgAuthorization {
 export async function getConnection(targetOrg: string): Promise<Connection> {
     try {
         const allAuthorizations = await AuthInfo.listAllAuthorizations();
-        
+
         const foundOrg = allAuthorizations.find(
-            auth => auth.username === targetOrg || 
-                   (auth.aliases && auth.aliases.includes(targetOrg))
+            (auth) =>
+                auth.username === targetOrg ||
+                (auth.aliases && auth.aliases.includes(targetOrg))
         );
-        
+
         if (!foundOrg) {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                `Please run 'sf org login' or 'sf org create' first.`
+                    `Please run 'sf org login' or 'sf org create' first.`
             );
         }
-        
+
         const authInfo = await AuthInfo.create({ username: foundOrg.username });
         const connection = await Connection.create({ authInfo });
         return connection;
-        
     } catch (error: any) {
-        if (error.name === 'NoAuthInfoFound') {
+        if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 'No authenticated orgs found. Please run "sf org login" to authenticate.'
             );
@@ -53,17 +54,36 @@ export async function getConnection(targetOrg: string): Promise<Connection> {
 export async function listAllOrgs(): Promise<OrgAuthorization[]> {
     try {
         const allAuthorizations = await AuthInfo.listAllAuthorizations();
-        
-        return allAuthorizations.map(auth => ({
-            username: auth.username,
-            aliases: auth.aliases || undefined,
-            orgId: auth.orgId,
-            instanceUrl: auth.instanceUrl,
-            isDevHub: auth.isDevHub
-        }));
-        
+
+        return await Promise.all(
+            allAuthorizations.map(async (auth) => {
+                try {
+                    const authInfo = await AuthInfo.create({
+                        username: auth.username,
+                    });
+                    const connection = await Connection.create({ authInfo });
+
+                    return {
+                        username: auth.username,
+                        aliases: auth.aliases || undefined,
+                        orgId: auth.orgId,
+                        instanceUrl: auth.instanceUrl,
+                        isDevHub: auth.isDevHub,
+                        apiVersion: connection.version,
+                    };
+                } catch {
+                    return {
+                        username: auth.username,
+                        aliases: auth.aliases || undefined,
+                        orgId: auth.orgId,
+                        instanceUrl: auth.instanceUrl,
+                        isDevHub: auth.isDevHub,
+                    };
+                }
+            })
+        );
     } catch (error: any) {
-        if (error.name === 'NoAuthInfoFound') {
+        if (error.name === "NoAuthInfoFound") {
             return [];
         }
         throw error;
@@ -79,8 +99,9 @@ export async function isOrgAuthenticated(targetOrg: string): Promise<boolean> {
     try {
         const allOrgs = await listAllOrgs();
         return allOrgs.some(
-            org => org.username === targetOrg || 
-                  (org.aliases && org.aliases.includes(targetOrg))
+            (org) =>
+                org.username === targetOrg ||
+                (org.aliases && org.aliases.includes(targetOrg))
         );
     } catch {
         return false;
@@ -92,14 +113,56 @@ export async function isOrgAuthenticated(targetOrg: string): Promise<boolean> {
  * @param targetOrg - The username or alias of the org
  * @returns Org authorization information or null if not found
  */
-export async function getOrgInfo(targetOrg: string): Promise<OrgAuthorization | null> {
+export async function getOrgInfo(
+    targetOrg: string
+): Promise<OrgAuthorization | null> {
     try {
         const allOrgs = await listAllOrgs();
-        return allOrgs.find(
-            org => org.username === targetOrg || 
-                  (org.aliases && org.aliases.includes(targetOrg))
-        ) || null;
+        return (
+            allOrgs.find(
+                (org) =>
+                    org.username === targetOrg ||
+                    (org.aliases && org.aliases.includes(targetOrg))
+            ) || null
+        );
     } catch {
         return null;
+    }
+}
+
+/**
+ * Get the access token for a Salesforce org
+ * @param targetOrg - The username or alias of the org
+ * @returns The access token string
+ * @throws Error if org is not authenticated
+ */
+export async function getOrgAccessToken(targetOrg: string): Promise<string> {
+    try {
+        const allAuthorizations = await AuthInfo.listAllAuthorizations();
+
+        const foundOrg = allAuthorizations.find(
+            (auth) =>
+                auth.username === targetOrg ||
+                (auth.aliases && auth.aliases.includes(targetOrg))
+        );
+
+        if (!foundOrg) {
+            throw new Error(
+                `No authenticated org found for '${targetOrg}'. ` +
+                    `Please run 'sf org login' or 'sf org create' first.`
+            );
+        }
+
+        const authInfo = await AuthInfo.create({ username: foundOrg.username });
+        const connection = await Connection.create({ authInfo });
+
+        return connection.accessToken || "";
+    } catch (error: any) {
+        if (error.name === "NoAuthInfoFound") {
+            throw new Error(
+                'No authenticated orgs found. Please run "sf org login" to authenticate.'
+            );
+        }
+        throw error;
     }
 }

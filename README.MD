@@ -571,7 +571,40 @@ Open a specific Salesforce record in the browser.
 - "Navigate to Account record 001... in production"
 - "Show me the Contact record 003... in the browser"
 
-#### 28. Package Install
+#### 28. Create Record
+
+Create a new record in a Salesforce org using the REST API.
+
+**Example prompts:**
+
+- "Create a new Account with Name 'Acme Corp' and Type 'Customer'"
+- "Insert a Contact record with FirstName 'John' and LastName 'Doe'"
+- "Create a Case with Subject 'Technical Issue' and Priority 'High'"
+- "Add a new Lead with Company 'Tech Startup' and Email 'lead@example.com'"
+
+#### 29. Update Record
+
+Update an existing record in a Salesforce org using the REST API.
+
+**Example prompts:**
+
+- "Update Account 001XX... to set BillingCity to 'San Francisco'"
+- "Change the Status of Opportunity 006XX... to 'Closed Won'"
+- "Update Contact 003XX... with Phone '(555) 123-4567'"
+- "Modify Case 500XX... to set Priority to 'Critical'"
+
+#### 30. Delete Record
+
+Delete a record from a Salesforce org using the REST API.
+
+**Example prompts:**
+
+- "Delete the Account record 001XX..."
+- "Remove Contact 003XX... from the org"
+- "Delete Lead record 00QXX..."
+- "Remove the test Case record 500XX..."
+
+#### 31. Package Install
 
 Install or upgrade a package version in a Salesforce org.
 
@@ -583,7 +616,7 @@ Install or upgrade a package version in a Salesforce org.
 - "Install package and compile only package Apex code"
 - "Upgrade unlocked package and deprecate removed components"
 
-#### 29. Package Uninstall
+#### 32. Package Uninstall
 
 Uninstall a second-generation package from a Salesforce org.
 
@@ -594,7 +627,7 @@ Uninstall a second-generation package from a Salesforce org.
 - "Uninstall package and wait 5 minutes for completion"
 - "Remove package with spaces in alias from sandbox"
 
-#### 30. Schema Generate Field
+#### 33. Schema Generate Field
 
 Generate metadata source files for a new custom field on a specified object.
 
@@ -605,7 +638,7 @@ Generate metadata source files for a new custom field on a specified object.
 - "Add a new text field 'External ID' to the Contact object"
 - "Generate a lookup field 'Parent Account' on MyObject\_\_c"
 
-#### 31. Schema Generate SObject
+#### 34. Schema Generate SObject
 
 Generate metadata source files for a new custom object.
 
@@ -616,7 +649,7 @@ Generate metadata source files for a new custom object.
 - "Add a new custom object 'Customer Survey' with all optional features enabled"
 - "Generate a custom object 'Product Catalog' without default features"
 
-#### 32. Schema Generate Tab
+#### 35. Schema Generate Tab
 
 Generate metadata source files for a new custom tab on a custom object.
 
@@ -627,7 +660,7 @@ Generate metadata source files for a new custom tab on a custom object.
 - "Add a navigation tab for Customer\_\_c with icon 75 in force-app/main/default/tabs"
 - "Create a tab for Product\_\_c custom object with default icon"
 
-#### 33. Search Records
+#### 36. Search Records
 
 Execute SOSL text-based searches across multiple objects. This is the primary tool for finding records that mention or contain specific text across your Salesforce org.
 

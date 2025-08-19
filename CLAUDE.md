@@ -71,7 +71,7 @@ The MCP server provides tools organized by functionality:
 - **Schema Tools** (`src/tools/schema.ts`): Generate custom objects, fields, and tabs
 - **Package Tools** (`src/tools/package.ts`): Install and uninstall packages
 - **Code Analysis Tools** (`src/tools/code-analyzer.ts`, `src/tools/scanner.ts`): Static code analysis and security scanning
-- **Record Tools** (`src/tools/records.ts`): Open records in browser
+- **Record Tools** (`src/tools/records.ts`): Open records in browser, create/update/delete records via REST API
 
 ### Adding New Tools
 
@@ -122,8 +122,10 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 - **Apex Debug Logs**: Fetch and view Apex debug logs from the org
 - **Apex Code Generation**: Generate Apex classes and triggers with metadata
 - **Record Navigation**: Open Salesforce records directly in browser
+- **Record CRUD Operations**: Create, update, and delete Salesforce records via REST API
 - **Enhanced Error Handling**: Improved error messages with more context
 - **Prettier Integration**: Automatic code formatting with `.prettierrc` configuration
+- **Read-Only Mode Support**: All write operations respect READ_ONLY permission setting
 
 ## Development Memories
 
