@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-08-19
+
+### Added
+
+- **Record CRUD Operations via REST API**: Complete suite of tools for managing Salesforce records
+    - `create_record` - Create new records with field values via REST API
+        - Supports all standard and custom objects
+        - JSON-based field value specification
+        - Returns created record ID on success
+        - Respects READ_ONLY and ALLOWED_ORGS permissions
+    - `update_record` - Update existing records with new field values
+        - Partial updates (only specified fields are modified)
+        - Supports 15 or 18 character record IDs
+        - JSON-based field value specification
+        - Respects READ_ONLY and ALLOWED_ORGS permissions
+    - `delete_record` - Permanently delete records from Salesforce
+        - Supports all deletable objects
+        - Permanent removal (use with caution)
+        - Respects READ_ONLY and ALLOWED_ORGS permissions
+    - All CRUD operations use native REST API for better performance
+    - Integrated with existing connection management system
+    - Enhanced connection utilities with `getOrgAccessToken()` and improved `listAllOrgs()` with API version info
+    - Centralized REST API execution with proper read-only mode enforcement
+
 ## [1.2.6] - 2025-08-15
 
 ### Fixed
