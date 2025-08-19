@@ -2,7 +2,7 @@
     "dxt_version": "0.2",
     "name": "salesforce-mcp-server",
     "display_name": "Salesforce MCP Server",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "description": "Salesforce MCP Server - Interact with Salesforce orgs through AI assistants",
     "icon": "icon.png",
     "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)",
@@ -62,7 +62,7 @@
         },
         {
             "name": "query_records",
-            "description": "Query records from a Salesforce SObject with support for ORDER BY clause"
+            "description": "Query records from a SINGLE Salesforce object with field conditions (SOQL)"
         },
         {
             "name": "query_records_to_file",
@@ -174,7 +174,7 @@
         },
         {
             "name": "search_records",
-            "description": "Execute SOSL text-based search queries across multiple Salesforce objects"
+            "description": "Search for text across MULTIPLE Salesforce objects simultaneously (SOSL) - use for finding mentions of companies, keywords, etc."
         }
     ],
     "compatibility": {

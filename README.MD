@@ -629,13 +629,14 @@ Generate metadata source files for a new custom tab on a custom object.
 
 #### 33. Search Records
 
-Execute SOSL text-based searches across multiple objects.
+Execute SOSL text-based searches across multiple objects. This is the primary tool for finding records that mention or contain specific text across your Salesforce org.
 
 **Example prompts:**
 
 - "Search for 'Anna Jones' in all Name fields"
 - "Find records containing 'Acme' across all objects"
 - "Search for phone number '415-555-1234' in Contact and Lead"
+- "Find all records mentioning our competitor 'Acme Corp' across Accounts, Opportunities, and Cases"
 - "Execute SOSL: FIND {Smith} IN ALL FIELDS RETURNING Contact, Lead"
 
 ### Practical Examples

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2025-08-15
+
+### Fixed
+
+- **Improved Tool Selection**: Enhanced tool descriptions to ensure AI assistants correctly choose between SOQL and SOSL
+    - `search_records` tool description now emphasizes it's the PRIMARY tool for text searches across multiple objects
+    - `query_records` tool description clarifies it's for SINGLE object queries with field conditions
+    - Added explicit guidance that text searches (finding mentions, keywords, company names) should use SOSL not multiple SOQL queries
+    - Updated manifest.json with clearer, more distinct tool descriptions
+    - This fixes the issue where AI would execute multiple SOQL queries instead of a single SOSL search
+
 ## [1.2.5] - 2025-08-15
 
 ### Added
