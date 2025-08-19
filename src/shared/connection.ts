@@ -9,6 +9,7 @@ export interface OrgAuthorization {
     orgId?: string;
     instanceUrl?: string;
     isDevHub?: boolean;
+    apiVersion?: string;
 }
 
 /**
@@ -54,13 +55,33 @@ export async function listAllOrgs(): Promise<OrgAuthorization[]> {
     try {
         const allAuthorizations = await AuthInfo.listAllAuthorizations();
 
-        return allAuthorizations.map((auth) => ({
-            username: auth.username,
-            aliases: auth.aliases || undefined,
-            orgId: auth.orgId,
-            instanceUrl: auth.instanceUrl,
-            isDevHub: auth.isDevHub,
-        }));
+        return await Promise.all(
+            allAuthorizations.map(async (auth) => {
+                try {
+                    const authInfo = await AuthInfo.create({
+                        username: auth.username,
+                    });
+                    const connection = await Connection.create({ authInfo });
+
+                    return {
+                        username: auth.username,
+                        aliases: auth.aliases || undefined,
+                        orgId: auth.orgId,
+                        instanceUrl: auth.instanceUrl,
+                        isDevHub: auth.isDevHub,
+                        apiVersion: connection.version,
+                    };
+                } catch {
+                    return {
+                        username: auth.username,
+                        aliases: auth.aliases || undefined,
+                        orgId: auth.orgId,
+                        instanceUrl: auth.instanceUrl,
+                        isDevHub: auth.isDevHub,
+                    };
+                }
+            })
+        );
     } catch (error: any) {
         if (error.name === "NoAuthInfoFound") {
             return [];
