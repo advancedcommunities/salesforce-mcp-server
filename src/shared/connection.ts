@@ -108,3 +108,40 @@ export async function getOrgInfo(
         return null;
     }
 }
+
+/**
+ * Get the access token for a Salesforce org
+ * @param targetOrg - The username or alias of the org
+ * @returns The access token string
+ * @throws Error if org is not authenticated
+ */
+export async function getOrgAccessToken(targetOrg: string): Promise<string> {
+    try {
+        const allAuthorizations = await AuthInfo.listAllAuthorizations();
+
+        const foundOrg = allAuthorizations.find(
+            (auth) =>
+                auth.username === targetOrg ||
+                (auth.aliases && auth.aliases.includes(targetOrg))
+        );
+
+        if (!foundOrg) {
+            throw new Error(
+                `No authenticated org found for '${targetOrg}'. ` +
+                    `Please run 'sf org login' or 'sf org create' first.`
+            );
+        }
+
+        const authInfo = await AuthInfo.create({ username: foundOrg.username });
+        const connection = await Connection.create({ authInfo });
+
+        return connection.accessToken || "";
+    } catch (error: any) {
+        if (error.name === "NoAuthInfoFound") {
+            throw new Error(
+                'No authenticated orgs found. Please run "sf org login" to authenticate.'
+            );
+        }
+        throw error;
+    }
+}
