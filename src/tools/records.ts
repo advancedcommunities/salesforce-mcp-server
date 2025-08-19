@@ -105,6 +105,21 @@ const executeSalesforceRestApi = async (
     const permissionError = checkOrgPermissions(targetOrg);
     if (permissionError) return permissionError;
 
+    if (
+        permissions.isReadOnly() &&
+        (method === "POST" || method === "PATCH" || method === "DELETE")
+    ) {
+        const action =
+            method === "POST"
+                ? "create"
+                : method === "PATCH"
+                ? "update"
+                : "delete";
+        return createErrorResponse(
+            `Cannot ${action} records: Server is in read-only mode`
+        );
+    }
+
     try {
         const { orgInfo, accessToken, error } = await prepareSalesforceRequest(
             targetOrg
