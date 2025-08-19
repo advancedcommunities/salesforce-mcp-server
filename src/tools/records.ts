@@ -270,4 +270,142 @@ export const registerOrgTools = (server: McpServer) => {
             }
         }
     );
+
+    server.tool(
+        "update_record",
+        "Update an existing record in a Salesforce org using the REST API. Updates specified fields on the record.",
+        {
+            input: z.object({
+                targetOrg: z
+                    .string()
+                    .describe(
+                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                    ),
+                sObject: z
+                    .string()
+                    .describe(
+                        "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject."
+                    ),
+                recordId: z
+                    .string()
+                    .describe(
+                        "Salesforce record ID to update (15 or 18 character ID)"
+                    ),
+                recordJson: z
+                    .string()
+                    .describe(
+                        'JSON string containing the field values to update. Example: \'{"BillingCity": "San Francisco", "Phone": "(555) 123-4567"}\'. Execute the sobject_describe tool first to get the correct field API names. Only include fields you want to update.'
+                    ),
+            }),
+        },
+        async ({ input }) => {
+            const { targetOrg, sObject, recordId, recordJson } = input;
+
+            if (!permissions.isOrgAllowed(targetOrg)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: `Access to org '${targetOrg}' is not allowed`,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            try {
+                let recordData;
+                try {
+                    recordData = JSON.parse(recordJson);
+                } catch (e) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: false,
+                                    message:
+                                        "Invalid JSON format for record data",
+                                }),
+                            },
+                        ],
+                    };
+                }
+
+                const OrgAuthorization = await getOrgInfo(targetOrg);
+                if (!OrgAuthorization) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: false,
+                                    message: `Could not get org info for ${targetOrg}`,
+                                }),
+                            },
+                        ],
+                    };
+                }
+
+                const accessToken = await getOrgAccessToken(targetOrg);
+
+                const endpoint = `${OrgAuthorization.instanceUrl}/services/data/v${OrgAuthorization.apiVersion}/sobjects/${sObject}/${recordId}`;
+                const response = await fetch(endpoint, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(recordData),
+                });
+
+                if (response.status === 204) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: true,
+                                    id: recordId,
+                                    message: `Successfully updated ${sObject} record`,
+                                }),
+                            },
+                        ],
+                    };
+                } else {
+                    const result = await response.json();
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: false,
+                                    message: `Failed to update record: ${response.statusText}`,
+                                    errors: result,
+                                    status: response.status,
+                                }),
+                            },
+                        ],
+                    };
+                }
+            } catch (error) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message:
+                                    error instanceof Error
+                                        ? error.message
+                                        : "Failed to update record",
+                            }),
+                        },
+                    ],
+                };
+            }
+        }
+    );
 };
