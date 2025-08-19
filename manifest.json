@@ -2,7 +2,7 @@
     "dxt_version": "0.2",
     "name": "salesforce-mcp-server",
     "display_name": "Salesforce MCP Server",
-    "version": "1.2.6",
+    "version": "1.3.0",
     "description": "Salesforce MCP Server - Interact with Salesforce orgs through AI assistants",
     "icon": "icon.png",
     "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)",
@@ -175,6 +175,18 @@
         {
             "name": "search_records",
             "description": "Search for text across MULTIPLE Salesforce objects simultaneously (SOSL) - use for finding mentions of companies, keywords, etc."
+        },
+        {
+            "name": "create_record",
+            "description": "Create a new record in a Salesforce org using REST API"
+        },
+        {
+            "name": "update_record",
+            "description": "Update an existing record in a Salesforce org using REST API"
+        },
+        {
+            "name": "delete_record",
+            "description": "Delete a record from a Salesforce org using REST API"
         }
     ],
     "compatibility": {
