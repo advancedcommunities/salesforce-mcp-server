@@ -9,7 +9,7 @@ const executeSoqlQuery = async (
     selectClause: string,
     where?: string,
     limit?: number,
-    orderBy?: string
+    orderBy?: string,
 ) => {
     let query = `SELECT ${selectClause} FROM ${sObject}`;
 
@@ -34,7 +34,7 @@ const executeSoqlQueryToFile = async (
     where?: string,
     outputFileName?: string,
     outputFileFormat: "csv" | "json" = "csv",
-    orderBy?: string
+    orderBy?: string,
 ) => {
     let query = `SELECT ${selectClause} FROM ${sObject}`;
 
@@ -56,13 +56,13 @@ const executeSoqlQueryToFile = async (
 export const registerQueryTools = (server: McpServer) => {
     server.tool(
         "query_records",
-        "Query records from a Salesforce SObject. This command allows you to execute a SOQL query against a specified Salesforce SObject in a given Org. You can specify the SELECT clause (fields, functions like COUNT(), aggregations, etc.), an optional WHERE clause, and an optional limit on the number of records returned. The results are returned in JSON format, making it easy to work with the data in your application or script. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
+        "Query records from a SINGLE Salesforce object using structured field conditions. Use this for precise queries on ONE object with specific field criteria (e.g., Status = 'Open', Amount > 1000). NOT for text searches across multiple objects - use search_records for that. This executes SOQL queries with SELECT, WHERE, ORDER BY, and LIMIT clauses on a single SObject. The results are returned in JSON format. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
         {
             input: z.object({
                 targetOrg: z
                     .string()
                     .describe(
-                        "Target Salesforce Org to execute the query against"
+                        "Target Salesforce Org to execute the query against",
                     ),
                 sObject: z
                     .string()
@@ -70,7 +70,7 @@ export const registerQueryTools = (server: McpServer) => {
                 selectClause: z
                     .string()
                     .describe(
-                        "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases"
+                        "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases",
                     ),
                 where: z
                     .string()
@@ -81,18 +81,19 @@ export const registerQueryTools = (server: McpServer) => {
                     .number()
                     .optional()
                     .describe(
-                        "Optional limit for the number of records returned"
+                        "Optional limit for the number of records returned",
                     ),
                 orderBy: z
                     .string()
                     .optional()
                     .describe(
-                        "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')"
+                        "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg, sObject, selectClause, where, limit, orderBy } = input;
+            const { targetOrg, sObject, selectClause, where, limit, orderBy } =
+                input;
 
             // Check org permissions
             if (!permissions.isOrgAllowed(targetOrg)) {
@@ -115,7 +116,7 @@ export const registerQueryTools = (server: McpServer) => {
                 selectClause,
                 where,
                 limit,
-                orderBy
+                orderBy,
             );
 
             return {
@@ -126,7 +127,7 @@ export const registerQueryTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -137,7 +138,7 @@ export const registerQueryTools = (server: McpServer) => {
                 targetOrg: z
                     .string()
                     .describe(
-                        "Target Salesforce Org to execute the query against"
+                        "Target Salesforce Org to execute the query against",
                     ),
                 sObject: z
                     .string()
@@ -145,7 +146,7 @@ export const registerQueryTools = (server: McpServer) => {
                 selectClause: z
                     .string()
                     .describe(
-                        "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases"
+                        "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases",
                     ),
                 where: z
                     .string()
@@ -160,13 +161,13 @@ export const registerQueryTools = (server: McpServer) => {
                     .optional()
                     .default("csv")
                     .describe(
-                        "Optional output file format to save the results, default is csv"
+                        "Optional output file format to save the results, default is csv",
                     ),
                 orderBy: z
                     .string()
                     .optional()
                     .describe(
-                        "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')"
+                        "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')",
                     ),
             }),
         },
@@ -203,7 +204,7 @@ export const registerQueryTools = (server: McpServer) => {
                 where,
                 outputFileName,
                 outputFileFormat as "csv" | "json",
-                orderBy
+                orderBy,
             );
 
             return {
@@ -214,6 +215,6 @@ export const registerQueryTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 };

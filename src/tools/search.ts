@@ -7,7 +7,7 @@ const executeSoslQuery = async (
     targetOrg: string,
     query?: string,
     file?: string,
-    resultFormat: string = "json"
+    resultFormat: string = "json",
 ) => {
     let sfCommand: string;
 
@@ -47,20 +47,20 @@ const executeSoslQuery = async (
 export const registerSearchTools = (server: McpServer) => {
     server.tool(
         "search_records",
-        "Execute a SOSL text-based search query in Salesforce. SOSL (Salesforce Object Search Language) allows you to search text across multiple objects and fields simultaneously. This is useful for finding records that contain specific text across your Salesforce org.",
+        "Search for text across multiple Salesforce objects simultaneously. USE THIS TOOL when searching for records that mention, contain, or reference specific text (like company names, keywords, phrases) across different objects. This is the PRIMARY tool for text-based searches across your org - it's much more efficient than running multiple SOQL queries. Perfect for finding all records mentioning a competitor, customer name, or any text across Accounts, Opportunities, Cases, Contacts, etc. SOSL (Salesforce Object Search Language) performs full-text search across all searchable fields.",
         {
             input: z
                 .object({
                     targetOrg: z
                         .string()
                         .describe(
-                            "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                            "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set.",
                         ),
                     query: z
                         .string()
                         .optional()
                         .describe(
-                            'SOSL query to execute (e.g., "FIND {Anna Jones} IN Name Fields RETURNING Contact (Name, Phone)")'
+                            'SOSL query to execute (e.g., "FIND {Anna Jones} IN Name Fields RETURNING Contact (Name, Phone)")',
                         ),
                     file: z
                         .string()
@@ -71,7 +71,7 @@ export const registerSearchTools = (server: McpServer) => {
                         .optional()
                         .default("json")
                         .describe(
-                            "Format to display the results. 'csv' writes to disk, 'human' and 'json' display to terminal"
+                            "Format to display the results. 'csv' writes to disk, 'human' and 'json' display to terminal",
                         ),
                 })
                 .refine(
@@ -81,7 +81,7 @@ export const registerSearchTools = (server: McpServer) => {
                     {
                         message:
                             "Provide either 'query' or 'file', but not both",
-                    }
+                    },
                 ),
         },
         async ({ input }) => {
@@ -106,7 +106,7 @@ export const registerSearchTools = (server: McpServer) => {
                     targetOrg,
                     query,
                     file,
-                    resultFormat
+                    resultFormat,
                 );
 
                 return {
@@ -132,6 +132,6 @@ export const registerSearchTools = (server: McpServer) => {
                     ],
                 };
             }
-        }
+        },
     );
 };
