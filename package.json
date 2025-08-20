@@ -9,7 +9,7 @@
         "build:dxt": "npm run build && mkdir -p dist && npx dxt pack . dist/salesforce-mcp-server.dxt"
     },
     "keywords": [],
-    "author": "",
+    "author": "Advanced Communities",
     "license": "MIT",
     "repository": {
         "type": "git",
