@@ -8,7 +8,22 @@
         "dev": "npm run build && npx @modelcontextprotocol/inspector node ./build/index.js",
         "build:dxt": "npm run build && mkdir -p dist && npx dxt pack . dist/salesforce-mcp-server.dxt"
     },
-    "keywords": [],
+    "keywords": [
+        "salesforce",
+        "mcp",
+        "model-context-protocol",
+        "ai",
+        "salesforce-cli",
+        "apex",
+        "soql",
+        "sobject",
+        "salesforce-api",
+        "salesforce-integration",
+        "mcp-server",
+        "ai-assistant",
+        "salesforce-development",
+        "salesforce-automation"
+    ],
     "author": "Advanced Communities",
     "license": "MIT",
     "repository": {
