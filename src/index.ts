@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerApexTools } from "./tools/apex.js";
@@ -46,7 +47,7 @@ function buildServerDescription(): string {
 
 const server = new McpServer({
     name: "salesforce-mcp-server",
-    version: "1.3.0",
+    version: "1.3.1",
     description: buildServerDescription(),
     capabilities: {
         tools: {},

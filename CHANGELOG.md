@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2025-08-21
+
+### Fixed
+
+- **NPM Package Execution**: Added shebang line (`#!/usr/bin/env node`) to fix npm package execution when run via `npx` - resolves "import: command not found" errors and enables direct VS Code MCP configuration usage
+
 ## [1.3.0] - 2025-08-19
 
 ### Added

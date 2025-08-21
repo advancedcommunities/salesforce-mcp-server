@@ -135,3 +135,5 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 - Build package and dxt file after making changes
 - Check that new tools are registered in both the tool file and manifest.json
 - Verify permission checks are implemented for destructive operations
+
+- don't forget to add shebang to the build file after creating a new build and before publishing it. it's important
