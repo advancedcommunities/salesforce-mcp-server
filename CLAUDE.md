@@ -138,3 +138,4 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 
 - don't forget to add shebang to the build file after creating a new build and before publishing it. it's important
 - when updating documentation don't forget to update @README.MD
+- when updating documentation, update the @manifest.json as well
