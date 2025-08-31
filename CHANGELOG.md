@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-08-31
+
+### Added
+
+- **Project Deployment Tool**: New tool for deploying metadata to Salesforce orgs
+    - `deploy_start` - Deploy metadata components to target org with extensive configuration options
+    - Supports multiple deployment sources: manifest (package.xml), metadata components, source directories
+    - Configurable test execution levels (NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg)
+    - Dry-run capability for validation without actual deployment
+    - Support for single package deployments
+    - Respects READ_ONLY and ALLOWED_ORGS permissions
+    - Integrated with existing permission system for secure deployments
+
 ## [1.3.2] - 2025-08-31
 
 ### Added
