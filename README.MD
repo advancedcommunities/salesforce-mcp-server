@@ -294,7 +294,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to the following tools:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 38 powerful tools:
 
 ### Available Tools
 
@@ -671,6 +671,29 @@ Execute SOSL text-based searches across multiple objects. This is the primary to
 - "Search for phone number '415-555-1234' in Contact and Lead"
 - "Find all records mentioning our competitor 'Acme Corp' across Accounts, Opportunities, and Cases"
 - "Execute SOSL: FIND {Smith} IN ALL FIELDS RETURNING Contact, Lead"
+
+#### 37. Generate Lightning Component
+
+Generate Lightning Web Components (LWC) or Aura components with configurable templates and output directories.
+
+**Example prompts:**
+
+- "Generate a Lightning Web Component called AccountList"
+- "Create an Aura component named ContactForm in the components directory"
+- "Generate an LWC with analyticsDashboard template called SalesMetrics"
+- "Create a Lightning component MyCustomView with default template"
+
+#### 38. Deploy Metadata to Org
+
+Deploy metadata components to a Salesforce org with various configuration options including test execution.
+
+**Example prompts:**
+
+- "Deploy all metadata from force-app directory to my dev org"
+- "Validate deployment to production with all tests but don't save (dry run)"
+- "Deploy specific Apex classes matching 'Account*' pattern to sandbox"
+- "Deploy using package.xml manifest with RunLocalTests"
+- "Deploy metadata and run specific test classes: TestClass1, TestClass2"
 
 ### Practical Examples
 
