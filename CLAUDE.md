@@ -137,3 +137,4 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 - Verify permission checks are implemented for destructive operations
 
 - don't forget to add shebang to the build file after creating a new build and before publishing it. it's important
+- when updating documentation, update the @manifest.json as well
