@@ -12,6 +12,7 @@ import { registerScannerTools } from "./tools/scanner.js";
 import { registerPackageTools } from "./tools/package.js";
 import { registerSchemaTools } from "./tools/schema.js";
 import { registerSearchTools } from "./tools/search.js";
+import { registerLightningTools } from "./tools/lightning.js";
 import { permissions } from "./config/permissions.js";
 
 /**
@@ -23,7 +24,7 @@ function buildServerDescription(): string {
     const allowedOrgs = permissions.getAllowedOrgs();
     const permissionInfo = [];
 
-    let description = `Salesforce MCP Server v1.3.0 - AI-powered Salesforce automation via CLI integration\n`;
+    let description = `Salesforce MCP Server v1.3.2 - AI-powered Salesforce automation via CLI integration\n`;
     description += `Capabilities: Apex execution, SOQL queries, org management, code testing & coverage\n`;
 
     if (readOnlyMode) {
@@ -65,6 +66,7 @@ registerScannerTools(server);
 registerPackageTools(server);
 registerSchemaTools(server);
 registerSearchTools(server);
+registerLightningTools(server);
 
 async function main() {
     const transport = new StdioServerTransport();
