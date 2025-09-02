@@ -68,10 +68,12 @@ The MCP server provides tools organized by functionality:
 - **SObject Tools** (`src/tools/sobjects.ts`): List and describe Salesforce objects
 - **Org Tools** (`src/tools/orgs.ts`): List connected orgs, login, logout, open org in browser
 - **Admin Tools** (`src/tools/admin.ts`): Manage permissions, users, metadata
-- **Schema Tools** (`src/tools/schema.ts`): Generate custom objects, fields, and tabs
+- **Schema Tools** (`src/tools/schema.ts`): Generate custom tabs
 - **Package Tools** (`src/tools/package.ts`): Install and uninstall packages
 - **Code Analysis Tools** (`src/tools/code-analyzer.ts`, `src/tools/scanner.ts`): Static code analysis and security scanning
 - **Record Tools** (`src/tools/records.ts`): Open records in browser, create/update/delete records via REST API
+- **Lightning Tools** (`src/tools/lightning.ts`): Generate Lightning Web Components and Aura components
+- **Project Tools** (`src/tools/project.ts`): Deploy metadata to Salesforce orgs
 
 ### Adding New Tools
 
@@ -119,6 +121,8 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 
 ## Recent Features Added
 
+- **Lightning Component Generation**: Generate Lightning Web Components and Aura components with customizable templates
+- **Project Deployment**: Deploy metadata to Salesforce orgs with various configuration options
 - **Apex Debug Logs**: Fetch and view Apex debug logs from the org
 - **Apex Code Generation**: Generate Apex classes and triggers with metadata
 - **Record Navigation**: Open Salesforce records directly in browser
@@ -126,6 +130,7 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 - **Enhanced Error Handling**: Improved error messages with more context
 - **Prettier Integration**: Automatic code formatting with `.prettierrc` configuration
 - **Read-Only Mode Support**: All write operations respect READ_ONLY permission setting
+- **Removed Interactive Schema Tools**: Field and object generation tools removed as they require interactive CLI prompts
 
 ## Development Memories
 

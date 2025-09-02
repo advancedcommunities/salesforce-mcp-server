@@ -294,7 +294,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 38 powerful tools:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 36 powerful tools:
 
 ### Available Tools
 
@@ -627,29 +627,7 @@ Uninstall a second-generation package from a Salesforce org.
 - "Uninstall package and wait 5 minutes for completion"
 - "Remove package with spaces in alias from sandbox"
 
-#### 33. Schema Generate Field
-
-Generate metadata source files for a new custom field on a specified object.
-
-**Example prompts:**
-
-- "Generate a new field called 'Customer Priority' on the Account object"
-- "Create a custom field with label 'Order Status' in my custom object"
-- "Add a new text field 'External ID' to the Contact object"
-- "Generate a lookup field 'Parent Account' on MyObject\_\_c"
-
-#### 34. Schema Generate SObject
-
-Generate metadata source files for a new custom object.
-
-**Example prompts:**
-
-- "Generate a new custom object called 'Project' with default features"
-- "Create a custom object with label 'Invoice' in my DX project"
-- "Add a new custom object 'Customer Survey' with all optional features enabled"
-- "Generate a custom object 'Product Catalog' without default features"
-
-#### 35. Schema Generate Tab
+#### 33. Schema Generate Tab
 
 Generate metadata source files for a new custom tab on a custom object.
 
@@ -660,7 +638,7 @@ Generate metadata source files for a new custom tab on a custom object.
 - "Add a navigation tab for Customer\_\_c with icon 75 in force-app/main/default/tabs"
 - "Create a tab for Product\_\_c custom object with default icon"
 
-#### 36. Search Records
+#### 34. Search Records
 
 Execute SOSL text-based searches across multiple objects. This is the primary tool for finding records that mention or contain specific text across your Salesforce org.
 
@@ -672,7 +650,7 @@ Execute SOSL text-based searches across multiple objects. This is the primary to
 - "Find all records mentioning our competitor 'Acme Corp' across Accounts, Opportunities, and Cases"
 - "Execute SOSL: FIND {Smith} IN ALL FIELDS RETURNING Contact, Lead"
 
-#### 37. Generate Lightning Component
+#### 35. Generate Lightning Component
 
 Generate Lightning Web Components (LWC) or Aura components with configurable templates and output directories.
 
@@ -683,7 +661,7 @@ Generate Lightning Web Components (LWC) or Aura components with configurable tem
 - "Generate an LWC with analyticsDashboard template called SalesMetrics"
 - "Create a Lightning component MyCustomView with default template"
 
-#### 38. Deploy Metadata to Org
+#### 36. Deploy Metadata to Org
 
 Deploy metadata components to a Salesforce org with various configuration options including test execution.
 
