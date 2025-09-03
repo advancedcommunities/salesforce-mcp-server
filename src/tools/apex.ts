@@ -368,19 +368,19 @@ export const registerApexTools = (server: McpServer) => {
                     .string()
                     .optional()
                     .describe(
-                        "Comma-separated list of test class names to run (required for RunSpecifiedTests)"
+                        "Apex test class names to run; default is all classes. If you select --class-names, you can't specify --suite-names or --tests. For multiple classes, repeat the flag for each: --class-names Class1 --class-names Class2."
                     ),
                 testSuites: z
                     .string()
                     .optional()
                     .describe(
-                        "Comma-separated list of test suite names to run"
+                        "Apex test suite names to run. If you select --suite-names, you can't specify --class-names or --tests. For multiple suites, repeat the flag for each: --suite-names Class1 --suite-names Class2."
                     ),
                 tests: z
                     .string()
                     .optional()
                     .describe(
-                        'JSON string specifying specific test methods to run, e.g., [{"className":"TestClass","testMethods":["testMethod1"]}]'
+                        "Apex test class names or IDs and, if applicable, test methods to run; default is all tests. If you specify --tests, you can't specify --class-names or --suite-names. For multiple tests, repeat the flag for each: --tests Test1 --tests Test2."
                     ),
                 codeCoverage: z
                     .boolean()
