@@ -35,7 +35,7 @@ const generateComponent = async (
 export const registerLightningTools = (server: McpServer) => {
     server.tool(
         "generate_component",
-        "",
+        "Generate Lightning Web Components (LWC) or Aura components with customizable templates and output directories",
         {
             input: z.object({
                 name: z
