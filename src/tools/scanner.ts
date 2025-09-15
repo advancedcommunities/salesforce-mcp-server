@@ -157,21 +157,19 @@ const runScannerDfa = async (
 export const registerScannerTools = (server: McpServer) => {
     server.tool(
         "scanner_run",
-        "Scan a codebase with a selection of rules. Evaluates rules against specified files and outputs results. When invoked without specifying any rules, all rules are run by default. If any of the input parameters were not provided, then you choose them based on the target file or files.",
+        "Scan codebase with security and quality rules. Defaults to all rules if none specified.",
         {
             input: z.object({
                 target: z
                     .array(z.string())
                     .optional()
                     .describe(
-                        "Source code location. Can use glob patterns. Default is '.'. Specify multiple values as comma-separated list."
+                        "Source location. Supports glob patterns. Default: '.'"
                     ),
                 category: z
                     .array(z.string())
                     .optional()
-                    .describe(
-                        "One or more categories of rules to run. Specify multiple values as a comma-separated list."
-                    ),
+                    .describe("Rule categories to run."),
                 engine: z
                     .array(
                         z.enum([
@@ -186,26 +184,17 @@ export const registerScannerTools = (server: McpServer) => {
                         ])
                     )
                     .optional()
-                    .describe(
-                        "Specify which engines to run. Submit multiple values as a comma-separated list."
-                    ),
+                    .describe("Engines to run."),
                 eslintConfig: z
                     .string()
                     .optional()
-                    .describe(
-                        "Specify the location of eslintrc config to customize eslint engine. Cannot be used with --tsconfig flag."
-                    ),
-                pmdConfig: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Location of PMD rule reference XML file to customize rule selection."
-                    ),
+                    .describe("ESLint config file. Cannot use with tsConfig."),
+                pmdConfig: z.string().optional().describe("PMD rule XML file."),
                 tsConfig: z
                     .string()
                     .optional()
                     .describe(
-                        "Location of tsconfig.json file used by the eslint-typescript engine. Cannot be used with --eslintconfig flag."
+                        "TypeScript config file. Cannot use with eslintConfig."
                     ),
                 format: z
                     .enum([
@@ -218,9 +207,7 @@ export const registerScannerTools = (server: McpServer) => {
                         "xml",
                     ])
                     .optional()
-                    .describe(
-                        "The output format for results written directly to the console. Default is table."
-                    ),
+                    .describe("Output format. Default: table"),
                 outfile: z
                     .string()
                     .optional()
@@ -231,29 +218,29 @@ export const registerScannerTools = (server: McpServer) => {
                     .max(3)
                     .optional()
                     .describe(
-                        "An error will be thrown when a violation is found with severity equal to or greater than specified level. Values are 1 (high), 2 (moderate), and 3 (low). Using this flag also invokes --normalize-severity."
+                        "Error on violations at/above this level: 1=high, 2=moderate, 3=low. Auto-enables normalize-severity."
                     ),
                 normalizeSeverity: z
                     .boolean()
                     .optional()
                     .describe(
-                        "Include normalized severity levels 1 (high), 2 (moderate), and 3 (low) with the results. For html format, normalized severity is displayed instead of engine severity."
+                        "Include normalized severity (1=high, 2=moderate, 3=low). HTML format shows normalized only."
                     ),
                 projectDir: z
                     .array(z.string())
                     .optional()
                     .describe(
-                        "The relative or absolute root project directories used to set context for Graph Engine's analysis. Specify multiple values as comma-separated list. Each must be a path, not a glob."
+                        "Root project directories for Graph Engine context. Must be paths, not globs."
                     ),
                 verbose: z
                     .boolean()
                     .optional()
-                    .describe("Emit additional command output to stdout."),
+                    .describe("Enable verbose output."),
                 verboseViolations: z
                     .boolean()
                     .optional()
                     .describe(
-                        "Includes Retire-js violation-message details about each vulnerability including summary, CVE, and URLs."
+                        "Include Retire-js vulnerability details (CVE, URLs)."
                     ),
             }),
         },
@@ -334,27 +321,25 @@ export const registerScannerTools = (server: McpServer) => {
 
     server.tool(
         "scanner_run_dfa",
-        "Run Salesforce Graph Engine to scan Apex code for data flow analysis issues. This performs path-based analysis to identify complex issues like SQL injection, SOQL injection, and other security vulnerabilities. If any of the input parameters were not provided, then you choose them based on the target file or files.",
+        "Run Graph Engine for Apex data flow analysis. Detects complex security issues like SOQL/SQL injection.",
         {
             input: z.object({
                 target: z
                     .array(z.string())
                     .optional()
                     .describe(
-                        "Source code location. Use glob patterns or specify individual methods with #-syntax. Multiple values specified as comma-separated list. Default is '.'."
+                        "Source location. Supports globs or methods with #-syntax. Default: '.'"
                     ),
                 projectDir: z
                     .array(z.string())
                     .optional()
                     .describe(
-                        "The relative or absolute root project directories used to set context for Graph Engine's analysis. Specify multiple values as comma-separated list. Each must be a path, not a glob."
+                        "Root project directories for Graph Engine context. Must be paths, not globs."
                     ),
                 category: z
                     .array(z.string())
                     .optional()
-                    .describe(
-                        "One or more categories of rules to run. Specify multiple values as a comma-separated list."
-                    ),
+                    .describe("Rule categories to run."),
                 format: z
                     .enum([
                         "csv",
@@ -366,9 +351,7 @@ export const registerScannerTools = (server: McpServer) => {
                         "xml",
                     ])
                     .optional()
-                    .describe(
-                        "The output format for results written directly to the console."
-                    ),
+                    .describe("Output format for console."),
                 outfile: z
                     .string()
                     .optional()
@@ -379,51 +362,51 @@ export const registerScannerTools = (server: McpServer) => {
                     .max(3)
                     .optional()
                     .describe(
-                        "An error will be thrown when a violation is found with severity equal to or greater than specified level. Values are 1 (high), 2 (moderate), and 3 (low). Using this flag also invokes --normalize-severity."
+                        "Error on violations at/above this level: 1=high, 2=moderate, 3=low. Auto-enables normalize-severity."
                     ),
                 normalizeSeverity: z
                     .boolean()
                     .optional()
                     .describe(
-                        "Include normalized severity levels 1 (high), 2 (moderate), and 3 (low) with the results. For html format, normalized severity is displayed instead of engine severity."
+                        "Include normalized severity (1=high, 2=moderate, 3=low). HTML format shows normalized only."
                     ),
                 withPilot: z
                     .boolean()
                     .optional()
-                    .describe("Allow pilot rules to execute."),
+                    .describe("Enable pilot rules."),
                 verbose: z
                     .boolean()
                     .optional()
-                    .describe("Emit additional command output to stdout."),
+                    .describe("Enable verbose output."),
                 ruleThreadCount: z
                     .number()
                     .optional()
                     .describe(
-                        "Number of DFA rule-evaluation threads or how many entry points can be evaluated concurrently. Inherits value from SFGE_RULE_THREAD_COUNT environment variable if set."
+                        "Concurrent DFA evaluation threads. Inherits SFGE_RULE_THREAD_COUNT if set."
                     ),
                 ruleThreadTimeout: z
                     .number()
                     .optional()
                     .describe(
-                        "Time limit in milliseconds for evaluating a single entry point. Inherits value from SFGE_RULE_THREAD_TIMEOUT environment variable if set."
+                        "Entry point evaluation timeout (ms). Inherits SFGE_RULE_THREAD_TIMEOUT if set."
                     ),
                 ruleDisableWarningViolation: z
                     .boolean()
                     .optional()
                     .describe(
-                        "Disable warning violations from Salesforce Graph Engine. Examples include those on StripInaccessible READ access, to get only high-severity violations. Inherits value from SFGE_RULE_DISABLE_WARNING_VIOLATION env-var if set."
+                        "Disable warnings (e.g., StripInaccessible READ). Inherits SFGE_RULE_DISABLE_WARNING_VIOLATION if set."
                     ),
                 sfgeJvmArgs: z
                     .string()
                     .optional()
                     .describe(
-                        "Java Virtual Machine (JVM) arguments to override system defaults while executing Salesforce Graph Engine. Separate multiple arguments by a space."
+                        "JVM arguments for Graph Engine. Space-separated."
                     ),
                 pathExpLimit: z
                     .number()
                     .optional()
                     .describe(
-                        "Path expansion upper boundary to limit complexity of code that Graph Engine analyzes before failing. Set to -1 to remove upper boundary. Inherits value from SFGE_PATH_EXPANSION_LIMIT if set."
+                        "Path expansion limit. Use -1 for unlimited. Inherits SFGE_PATH_EXPANSION_LIMIT if set."
                     ),
             }),
         },
