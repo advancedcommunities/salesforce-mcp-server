@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2025-09-15
+
+### Changed
+
+- **Improved Tool Descriptions**: Refactored and simplified descriptions across multiple tools for better clarity and conciseness
+    - Enhanced parameter descriptions for code analyzer tools to be more user-friendly
+    - Improved scanner tool descriptions for better understanding of security analysis capabilities
+    - Clarified deploy_start tool parameter descriptions for deployment options
+    - Added missing description for generate_component tool in Lightning tools
+- **Code Quality**: Removed unused imports and improved code organization
+    - Removed unused `executeSfCommandRaw` import from apex.ts
+    - General code refactoring for better maintainability
+
 ## [1.5.1] - 2025-09-03
 
 ### Fixed
