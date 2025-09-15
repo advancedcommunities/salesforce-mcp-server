@@ -12,7 +12,7 @@ import {
 } from "@salesforce/apex-node";
 import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
-import { executeSfCommand, executeSfCommandRaw } from "../utils/sfCommand.js";
+import { executeSfCommand } from "../utils/sfCommand.js";
 
 const executeAnonymousApex = async (
     targetOrg: string,
