@@ -92,7 +92,7 @@ export const registerProjectTools = (server: McpServer) => {
                     .string()
                     .optional()
                     .describe(
-                        "Local source path to deploy. Excludes --metadata and --manifest."
+                        "Local source path to deploy - can be a directory OR a specific file path (e.g., 'force-app/main' or 'force-app/main/default/classes/MyClass.cls'). For single file deployment, provide the exact file path. If you specify this flag, don't specify --metadata or --manifest."
                     ),
                 tests: z
                     .string()
