@@ -33,7 +33,9 @@ function findSfPath(): string {
     }
 
     const currentPlatform = platform();
-    const pathsToCheck = COMMON_SF_PATHS[currentPlatform as keyof typeof COMMON_SF_PATHS] || COMMON_SF_PATHS.linux;
+    const pathsToCheck =
+        COMMON_SF_PATHS[currentPlatform as keyof typeof COMMON_SF_PATHS] ||
+        COMMON_SF_PATHS.linux;
 
     for (const path of pathsToCheck) {
         if (path && existsSync(path)) {
@@ -51,29 +53,50 @@ export function executeSfCommand(command: string): Promise<any> {
     const fullCommand = command.replace(/^sf\s+/, `"${sfPath}" `);
 
     return new Promise((resolve, reject) => {
-        exec(fullCommand, { maxBuffer: 50 * 1024 * 1024 }, (error, stdout, stderr) => {
-            if (error) {
-                if (error.message.includes("command not found") || error.message.includes("is not recognized")) {
-                    reject(new Error(
-                        "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
-                        "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions."
-                    ));
-                } else {
+        exec(
+            fullCommand,
+            { maxBuffer: 50 * 1024 * 1024 },
+            (error, stdout, stderr) => {
+                if (error) {
+                    if (
+                        error.message.includes("command not found") ||
+                        error.message.includes("is not recognized")
+                    ) {
+                        reject(
+                            new Error(
+                                "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
+                                    "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions."
+                            )
+                        );
+                        return;
+                    }
+                    // When --json flag is used, SF CLI returns errors as JSON in stdout
+                    // Try to parse stdout as JSON error response
+                    if (stdout && stdout.trim().length > 0) {
+                        try {
+                            const result = JSON.parse(stdout);
+                            // If it's a valid JSON response (error or success), return it
+                            resolve(result);
+                            return;
+                        } catch (parseError) {
+                            // If JSON parsing fails, fall through to reject with original error
+                        }
+                    }
                     reject(error);
+                    return;
                 }
-                return;
+                if (stderr && !stderr.includes("Warning")) {
+                    reject(new Error(stderr));
+                    return;
+                }
+                try {
+                    const result = JSON.parse(stdout);
+                    resolve(result);
+                } catch (parseError) {
+                    reject(parseError);
+                }
             }
-            if (stderr && !stderr.includes("Warning")) {
-                reject(new Error(stderr));
-                return;
-            }
-            try {
-                const result = JSON.parse(stdout);
-                resolve(result);
-            } catch (parseError) {
-                reject(parseError);
-            }
-        });
+        );
     });
 }
 
@@ -82,26 +105,39 @@ export function executeSfCommandRaw(command: string): Promise<string> {
     const fullCommand = command.replace(/^sf\s+/, `"${sfPath}" `);
 
     return new Promise((resolve, reject) => {
-        exec(fullCommand, { maxBuffer: 50 * 1024 * 1024 }, (error, stdout, stderr) => {
-            if (error) {
-                if (error.message.includes("command not found") || error.message.includes("is not recognized")) {
-                    reject(new Error(
-                        "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
-                        "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions."
-                    ));
-                } else {
-                    // For scanner commands, non-zero exit code with stdout means violations were found
-                    // We should still return the output in this case
-                    if (stdout && (command.includes("scanner") || command.includes("code-analyzer"))) {
-                        resolve(stdout);
-                        return;
+        exec(
+            fullCommand,
+            { maxBuffer: 50 * 1024 * 1024 },
+            (error, stdout, stderr) => {
+                if (error) {
+                    if (
+                        error.message.includes("command not found") ||
+                        error.message.includes("is not recognized")
+                    ) {
+                        reject(
+                            new Error(
+                                "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
+                                    "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions."
+                            )
+                        );
+                    } else {
+                        // For scanner commands, non-zero exit code with stdout means violations were found
+                        // We should still return the output in this case
+                        if (
+                            stdout &&
+                            (command.includes("scanner") ||
+                                command.includes("code-analyzer"))
+                        ) {
+                            resolve(stdout);
+                            return;
+                        }
+                        reject(error);
                     }
-                    reject(error);
+                    return;
                 }
-                return;
+                // Return raw stdout without JSON parsing
+                resolve(stdout);
             }
-            // Return raw stdout without JSON parsing
-            resolve(stdout);
-        });
+        );
     });
 }
