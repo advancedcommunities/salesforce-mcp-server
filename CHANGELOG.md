@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] - 2025-10-22
+
+### Fixed
+
+- **Salesforce CLI Error Handling**: Fixed `executeSfCommand` to properly parse and return JSON error responses from Salesforce CLI
+    - When SF CLI commands fail with `--json` flag, errors are now properly captured from stdout
+    - Error details (name, message, exitCode, context, stack) are now correctly returned to MCP clients
+    - Fixes issue where deployment errors like "No source-backed components present in the package" were not visible
+    - Maintains backward compatibility with existing error handling
+
 ## [1.5.3] - 2025-09-20
 
 ### Fixed
