@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5] - 2025-10-26
+
+### Fixed
+
+- **Salesforce CLI Path Resolution on Windows**: Fixed issue where `sf` command in PATH was being incorrectly quoted on Windows
+    - The `deploy_start` tool and all other SF CLI commands now work correctly when SF CLI is in the system PATH
+    - Only quote SF CLI paths when they contain spaces (indicating full path like "C:\Program Files\sf\bin\sf.cmd")
+    - Don't quote plain command names (like "sf") that should be resolved from PATH
+    - Fixes "Command failed: 'sf' is not recognized" errors on Windows
+    - Applied fix to both `executeSfCommand` and `executeSfCommandRaw` functions in sfCommand.ts
+
 ## [1.5.4] - 2025-10-22
 
 ### Fixed
