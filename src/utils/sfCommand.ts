@@ -50,7 +50,9 @@ function findSfPath(): string {
 
 export function executeSfCommand(command: string): Promise<any> {
     const sfPath = findSfPath();
-    const fullCommand = command.replace(/^sf\s+/, `"${sfPath}" `);
+    // Only quote the path if it contains spaces (indicating it's a full path, not a command name)
+    const quotedPath = sfPath.includes(" ") ? `"${sfPath}"` : sfPath;
+    const fullCommand = command.replace(/^sf\s+/, `${quotedPath} `);
 
     return new Promise((resolve, reject) => {
         exec(
@@ -65,8 +67,8 @@ export function executeSfCommand(command: string): Promise<any> {
                         reject(
                             new Error(
                                 "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
-                                    "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions."
-                            )
+                                    "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions.",
+                            ),
                         );
                         return;
                     }
@@ -95,14 +97,16 @@ export function executeSfCommand(command: string): Promise<any> {
                 } catch (parseError) {
                     reject(parseError);
                 }
-            }
+            },
         );
     });
 }
 
 export function executeSfCommandRaw(command: string): Promise<string> {
     const sfPath = findSfPath();
-    const fullCommand = command.replace(/^sf\s+/, `"${sfPath}" `);
+    // Only quote the path if it contains spaces (indicating it's a full path, not a command name)
+    const quotedPath = sfPath.includes(" ") ? `"${sfPath}"` : sfPath;
+    const fullCommand = command.replace(/^sf\s+/, `${quotedPath} `);
 
     return new Promise((resolve, reject) => {
         exec(
@@ -117,8 +121,8 @@ export function executeSfCommandRaw(command: string): Promise<string> {
                         reject(
                             new Error(
                                 "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
-                                    "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions."
-                            )
+                                    "Visit https://developer.salesforce.com/tools/salesforcecli for installation instructions.",
+                            ),
                         );
                     } else {
                         // For scanner commands, non-zero exit code with stdout means violations were found
@@ -137,7 +141,7 @@ export function executeSfCommandRaw(command: string): Promise<string> {
                 }
                 // Return raw stdout without JSON parsing
                 resolve(stdout);
-            }
+            },
         );
     });
 }
