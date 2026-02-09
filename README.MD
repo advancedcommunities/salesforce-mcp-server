@@ -239,6 +239,26 @@ The server supports the following environment variables for access control:
 
 When ALLOWED_ORGS is set, the `list_connected_salesforce_orgs` tool will only show orgs that match the allowed list.
 
+### Default Org
+
+All tools that interact with a Salesforce org accept an optional `targetOrg` parameter. When `targetOrg` is not provided, the server automatically resolves the default org from your Salesforce CLI configuration.
+
+To set a default org:
+
+```bash
+sf config set target-org <alias-or-username>
+```
+
+To check which org is currently set as default:
+
+```bash
+sf config get target-org
+```
+
+When a default org is configured, you can use any tool without specifying `targetOrg` — the server will use the default automatically. If no `targetOrg` is provided and no default org is configured, the tool will return an error asking you to either provide `targetOrg` or set a default.
+
+You can check the current default org via the `get_server_permissions` tool, which includes it in its response.
+
 ### Permission Examples
 
 **Read-only access to all orgs:**
@@ -294,7 +314,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 36 powerful tools:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 39 powerful tools:
 
 ### Available Tools
 
@@ -672,6 +692,36 @@ Deploy metadata components to a Salesforce org with various configuration option
 - "Deploy specific Apex classes matching 'Account*' pattern to sandbox"
 - "Deploy using package.xml manifest with RunLocalTests"
 - "Deploy metadata and run specific test classes: TestClass1, TestClass2"
+
+#### 37. Get Default Org
+
+Get the current default target org configured in the Salesforce CLI. This is the org used automatically when no `targetOrg` is specified.
+
+**Example prompts:**
+
+- "What is my default Salesforce org?"
+- "Show me the current default target org"
+- "Which org am I connected to by default?"
+
+#### 38. Set Default Org
+
+Set the default target org for the Salesforce CLI. Once set, all tools will use this org when no `targetOrg` is specified.
+
+**Example prompts:**
+
+- "Set my default org to dev-sandbox"
+- "Change the default target org to production"
+- "Make 'staging' my default Salesforce org"
+
+#### 39. Clear Default Org
+
+Clear the default target org from the Salesforce CLI configuration. After clearing, all tools will require an explicit `targetOrg` parameter.
+
+**Example prompts:**
+
+- "Clear the default Salesforce org"
+- "Remove the default target org setting"
+- "Unset my default org"
 
 ### Practical Examples
 

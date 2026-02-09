@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
 import { getOrgInfo, getOrgAccessToken } from "../shared/connection.js";
+import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { exec } from "node:child_process";
 import { platform } from "node:os";
 import z from "zod";
@@ -146,7 +147,7 @@ const executeSalesforceRestApi = async (
             if (response.ok) {
                 return createSuccessResponse(
                     `Successfully created ${sObject} record`,
-                    { id: result.id, result }
+                    { targetOrg, id: result.id, result },
                 );
             } else {
                 return createErrorResponse(
@@ -159,7 +160,7 @@ const executeSalesforceRestApi = async (
                 const action = method === "PATCH" ? "updated" : "deleted";
                 return createSuccessResponse(
                     `Successfully ${action} ${sObject} record`,
-                    { id: recordId }
+                    { targetOrg, id: recordId },
                 );
             } else {
                 const result = await response.json();
@@ -243,8 +244,9 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 recordId: z
                     .string()
@@ -252,11 +254,14 @@ export const registerOrgTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            const { targetOrg, recordId } = input;
-
-            if (!targetOrg || targetOrg.trim() === "") {
-                return createErrorResponse("Target org is required");
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return createErrorResponse(error.message);
             }
+
+            const { recordId } = input;
 
             if (!recordId || recordId.trim() === "") {
                 return createErrorResponse("Salesforce record Id is required");
@@ -268,6 +273,7 @@ export const registerOrgTools = (server: McpServer) => {
             try {
                 const result = await openRecordInBrowser(targetOrg, recordId);
                 return createSuccessResponse(result.message, {
+                    targetOrg,
                     url: result.url,
                 });
             } catch (error) {
@@ -287,8 +293,9 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 sObject: z
                     .string()
@@ -303,7 +310,14 @@ export const registerOrgTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            const { targetOrg, sObject, recordJson } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return createErrorResponse(error.message);
+            }
+
+            const { sObject, recordJson } = input;
 
             const { data: recordData, error: jsonError } =
                 parseJsonData(recordJson);
@@ -326,8 +340,9 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 sObject: z
                     .string()
@@ -347,7 +362,14 @@ export const registerOrgTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            const { targetOrg, sObject, recordId, recordJson } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return createErrorResponse(error.message);
+            }
+
+            const { sObject, recordId, recordJson } = input;
 
             const { data: recordData, error: jsonError } =
                 parseJsonData(recordJson);
@@ -370,8 +392,9 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 sObject: z
                     .string()
@@ -386,7 +409,14 @@ export const registerOrgTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            const { targetOrg, sObject, recordId } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return createErrorResponse(error.message);
+            }
+
+            const { sObject, recordId } = input;
 
             return executeSalesforceRestApi(
                 targetOrg,

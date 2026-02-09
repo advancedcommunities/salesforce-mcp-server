@@ -41,21 +41,29 @@ This is a Model Context Protocol (MCP) server that enables AI assistants to inte
 When implementing new tools, follow this pattern:
 
 ```typescript
-// 1. Define Zod schema for input validation
+// 1. Define Zod schema for input validation (targetOrg is optional — falls back to SF CLI default)
 const MyToolSchema = z.object({
-    targetOrg: z.string(),
+    targetOrg: z.string().optional(),
     // other parameters
 });
 
-// 2. Check permissions
+// 2. Resolve target org (uses default if not provided)
+let targetOrg: string;
+try {
+    targetOrg = await resolveTargetOrg(input.targetOrg);
+} catch (error: any) {
+    return { content: [{ type: "text", text: JSON.stringify({ success: false, message: error.message }) }] };
+}
+
+// 3. Check permissions
 if (!permissions.canAccessOrg(targetOrg)) {
     return { error: "Access denied" };
 }
 
-// 3. Execute operation (via CLI or native API)
+// 4. Execute operation (via CLI or native API)
 const result = await executeSfCommand(["command", "args"], targetOrg);
 
-// 4. Return structured response
+// 5. Return structured response
 return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
 ```
 
@@ -96,6 +104,7 @@ The MCP server provides tools organized by functionality:
 - `src/index.ts` - Server initialization and tool registration
 - `src/config/permissions.ts` - Permission enforcement logic
 - `src/utils/sfCommand.ts` - Salesforce CLI integration
+- `src/utils/resolveTargetOrg.ts` - Default org resolution with caching
 - `src/shared/connection.ts` - Salesforce authentication handling
 - `manifest.json` - Desktop Extension configuration and tool metadata
 

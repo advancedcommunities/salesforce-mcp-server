@@ -42,18 +42,15 @@ function buildServerDescription(): string {
         description += `Security: Full access enabled for all authenticated orgs`;
     }
 
-    description += `\nTools: 38 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment)`;
+    description += `\nTools: 39 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment)`;
 
     return description;
 }
 
 const server = new McpServer({
     name: "salesforce-mcp-server",
-    version: "1.5.4",
+    version: "1.5.5",
     description: buildServerDescription(),
-    capabilities: {
-        tools: {},
-    },
 });
 
 registerApexTools(server);

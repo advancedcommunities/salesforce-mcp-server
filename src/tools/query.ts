@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
+import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 const executeSoqlQuery = async (
     targetOrg: string,
@@ -61,8 +62,9 @@ export const registerQueryTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org to execute the query against",
+                        "Target Salesforce Org to execute the query against. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 sObject: z
                     .string()
@@ -92,8 +94,24 @@ export const registerQueryTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            const { targetOrg, sObject, selectClause, where, limit, orderBy } =
-                input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { sObject, selectClause, where, limit, orderBy } = input;
 
             // Check org permissions
             if (!permissions.isOrgAllowed(targetOrg)) {
@@ -123,7 +141,7 @@ export const registerQueryTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, records: result }),
                     },
                 ],
             };
@@ -137,8 +155,9 @@ export const registerQueryTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org to execute the query against",
+                        "Target Salesforce Org to execute the query against. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 sObject: z
                     .string()
@@ -172,8 +191,24 @@ export const registerQueryTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             const {
-                targetOrg,
                 sObject,
                 selectClause,
                 where,
@@ -211,7 +246,7 @@ export const registerQueryTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };

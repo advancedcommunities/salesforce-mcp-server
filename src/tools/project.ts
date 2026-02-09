@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
-import { executeSfCommand, executeSfCommandRaw } from "../utils/sfCommand.js";
+import { executeSfCommand } from "../utils/sfCommand.js";
+import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 const deployStart = async (
     targetOrg: string,
@@ -62,7 +63,12 @@ export const registerProjectTools = (server: McpServer) => {
         "Deploy metadata to Salesforce org with test execution options.",
         {
             input: z.object({
-                targetOrg: z.string().describe("Target org username or alias."),
+                targetOrg: z
+                    .string()
+                    .optional()
+                    .describe(
+                        "Target org username or alias. If not provided, uses the default org from SF CLI configuration.",
+                    ),
                 dryRun: z
                     .boolean()
                     .describe("Validate only, don't save changes."),
@@ -109,8 +115,24 @@ export const registerProjectTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             const {
-                targetOrg,
                 dryRun,
                 manifest,
                 metadata,
@@ -166,7 +188,7 @@ export const registerProjectTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };

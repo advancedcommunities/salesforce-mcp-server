@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
+import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 const executeSoslQuery = async (
     targetOrg: string,
@@ -53,8 +54,9 @@ export const registerSearchTools = (server: McpServer) => {
                 .object({
                     targetOrg: z
                         .string()
+                        .optional()
                         .describe(
-                            "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set.",
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                         ),
                     query: z
                         .string()
@@ -85,7 +87,24 @@ export const registerSearchTools = (server: McpServer) => {
                 ),
         },
         async ({ input }) => {
-            const { targetOrg, query, file, resultFormat } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { query, file, resultFormat } = input;
 
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -113,7 +132,7 @@ export const registerSearchTools = (server: McpServer) => {
                     content: [
                         {
                             type: "text",
-                            text: JSON.stringify(result),
+                            text: JSON.stringify({ targetOrg, ...result }),
                         },
                     ],
                 };

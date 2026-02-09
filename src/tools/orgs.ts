@@ -2,6 +2,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { listAllOrgs } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
+import {
+    resolveTargetOrg,
+    getDefaultOrg,
+    clearDefaultOrgCache,
+} from "../utils/resolveTargetOrg.js";
 import z from "zod";
 
 /**
@@ -21,24 +26,24 @@ const listConnectedSalesforceOrgs = async () => {
                   if (permissions.isOrgAllowed(org.username)) return true;
                   if (org.aliases) {
                       return org.aliases.some((alias) =>
-                          permissions.isOrgAllowed(alias)
+                          permissions.isOrgAllowed(alias),
                       );
                   }
                   return false;
               });
 
     const scratchOrgs = filteredOrgs.filter(
-        (org) => !org.isDevHub && org.orgId
+        (org) => !org.isDevHub && org.orgId,
     );
     const devHubOrgs = filteredOrgs.filter((org) => org.isDevHub);
     const sandboxes = filteredOrgs.filter(
-        (org) => !org.isDevHub && org.instanceUrl?.includes(".sandbox.")
+        (org) => !org.isDevHub && org.instanceUrl?.includes(".sandbox."),
     );
     const production = filteredOrgs.filter(
         (org) =>
             !org.isDevHub &&
             !org.instanceUrl?.includes(".sandbox.") &&
-            org.instanceUrl?.includes(".salesforce.com")
+            org.instanceUrl?.includes(".salesforce.com"),
     );
 
     return {
@@ -73,7 +78,7 @@ const loginIntoOrg = async (alias: string, isProduction: boolean) => {
 const assignPermissionSet = async (
     targetOrg: string,
     permissionSetNames: string[],
-    onBehalfOf?: string[]
+    onBehalfOf?: string[],
 ) => {
     let sfCommand = `sf org assign permset --target-org ${targetOrg}`;
 
@@ -100,7 +105,7 @@ const assignPermissionSet = async (
 const assignPermissionSetLicense = async (
     targetOrg: string,
     licenseNames: string[],
-    onBehalfOf?: string[]
+    onBehalfOf?: string[],
 ) => {
     let sfCommand = `sf org assign permsetlicense --target-org ${targetOrg}`;
 
@@ -140,7 +145,7 @@ const listMetadata = async (
     metadataType: string,
     folder?: string,
     apiVersion?: string,
-    outputFile?: string
+    outputFile?: string,
 ) => {
     let sfCommand = `sf org list metadata --target-org ${targetOrg} --metadata-type ${metadataType}`;
 
@@ -169,7 +174,7 @@ const listMetadata = async (
 const listMetadataTypes = async (
     targetOrg: string,
     apiVersion?: string,
-    outputFile?: string
+    outputFile?: string,
 ) => {
     let sfCommand = `sf org list metadata-types --target-org ${targetOrg}`;
 
@@ -215,7 +220,7 @@ const openOrg = async (
     path?: string,
     browser?: string,
     privateMode?: boolean,
-    sourceFile?: string
+    sourceFile?: string,
 ) => {
     let sfCommand = `sf org open --target-org ${targetOrg}`;
 
@@ -260,7 +265,7 @@ export const registerOrgTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -272,7 +277,7 @@ export const registerOrgTools = (server: McpServer) => {
                 isProduction: z
                     .boolean()
                     .describe(
-                        "Indicates whether the org will be logged in via https://login.salesforce.com or https://test.salesforce.com URL."
+                        "Indicates whether the org will be logged in via https://login.salesforce.com or https://test.salesforce.com URL.",
                     ),
             }),
         },
@@ -302,7 +307,7 @@ export const registerOrgTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -312,8 +317,9 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 permissionSetNames: z
                     .array(z.string())
@@ -323,12 +329,29 @@ export const registerOrgTools = (server: McpServer) => {
                     .array(z.string())
                     .optional()
                     .describe(
-                        "Username or alias to assign the permission set to. If not specified, assigns to the original admin user."
+                        "Username or alias to assign the permission set to. If not specified, assigns to the original admin user.",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg, permissionSetNames, onBehalfOf } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { permissionSetNames, onBehalfOf } = input;
 
             if (permissions.isReadOnly()) {
                 return {
@@ -339,20 +362,6 @@ export const registerOrgTools = (server: McpServer) => {
                                 success: false,
                                 message:
                                     "Cannot assign permission sets in read-only mode",
-                            }),
-                        },
-                    ],
-                };
-            }
-
-            if (!targetOrg || targetOrg.trim() === "") {
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: JSON.stringify({
-                                success: false,
-                                message: "Target org is required",
                             }),
                         },
                     ],
@@ -391,17 +400,17 @@ export const registerOrgTools = (server: McpServer) => {
             const result = await assignPermissionSet(
                 targetOrg,
                 permissionSetNames,
-                onBehalfOf
+                onBehalfOf,
             );
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -411,8 +420,9 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 licenseNames: z
                     .array(z.string())
@@ -422,12 +432,29 @@ export const registerOrgTools = (server: McpServer) => {
                     .array(z.string())
                     .optional()
                     .describe(
-                        "Username or alias to assign the permission set license to. If not specified, assigns to the original admin user."
+                        "Username or alias to assign the permission set license to. If not specified, assigns to the original admin user.",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg, licenseNames, onBehalfOf } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { licenseNames, onBehalfOf } = input;
 
             if (permissions.isReadOnly()) {
                 return {
@@ -438,20 +465,6 @@ export const registerOrgTools = (server: McpServer) => {
                                 success: false,
                                 message:
                                     "Cannot assign permission set licenses in read-only mode",
-                            }),
-                        },
-                    ],
-                };
-            }
-
-            if (!targetOrg || targetOrg.trim() === "") {
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: JSON.stringify({
-                                success: false,
-                                message: "Target org is required",
                             }),
                         },
                     ],
@@ -490,17 +503,17 @@ export const registerOrgTools = (server: McpServer) => {
             const result = await assignPermissionSetLicense(
                 targetOrg,
                 licenseNames,
-                onBehalfOf
+                onBehalfOf,
             );
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -510,22 +523,24 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg } = input;
-
-            if (!targetOrg || targetOrg.trim() === "") {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: "Target org is required",
+                                message: error.message,
                             }),
                         },
                     ],
@@ -551,11 +566,11 @@ export const registerOrgTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -565,51 +580,54 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 metadataType: z
                     .string()
                     .describe(
-                        "Metadata type to be retrieved, such as CustomObject; metadata type names are case-sensitive."
+                        "Metadata type to be retrieved, such as CustomObject; metadata type names are case-sensitive.",
                     ),
                 folder: z
                     .string()
                     .optional()
                     .describe(
-                        "Folder associated with the component; required for components that use folders; folder names are case-sensitive. Examples of metadata types that use folders are Dashboard, Document, EmailTemplate, and Report."
+                        "Folder associated with the component; required for components that use folders; folder names are case-sensitive. Examples of metadata types that use folders are Dashboard, Document, EmailTemplate, and Report.",
                     ),
                 apiVersion: z
                     .string()
                     .optional()
                     .describe(
-                        "API version to use; default is the most recent API version."
+                        "API version to use; default is the most recent API version.",
                     ),
                 outputFile: z
                     .string()
                     .optional()
                     .describe(
-                        "Pathname of the file in which to write the results."
+                        "Pathname of the file in which to write the results.",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg, metadataType, folder, apiVersion, outputFile } =
-                input;
-
-            if (!targetOrg || targetOrg.trim() === "") {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: "Target org is required",
+                                message: error.message,
                             }),
                         },
                     ],
                 };
             }
+
+            const { metadataType, folder, apiVersion, outputFile } = input;
 
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -644,17 +662,17 @@ export const registerOrgTools = (server: McpServer) => {
                 metadataType,
                 folder,
                 apiVersion,
-                outputFile
+                outputFile,
             );
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -664,39 +682,43 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 apiVersion: z
                     .string()
                     .optional()
                     .describe(
-                        "API version to use; default is the most recent API version."
+                        "API version to use; default is the most recent API version.",
                     ),
                 outputFile: z
                     .string()
                     .optional()
                     .describe(
-                        "Pathname of the file in which to write the results. Directing the output to a file makes it easier to extract relevant information for your package.xml manifest file."
+                        "Pathname of the file in which to write the results. Directing the output to a file makes it easier to extract relevant information for your package.xml manifest file.",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg, apiVersion, outputFile } = input;
-
-            if (!targetOrg || targetOrg.trim() === "") {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: "Target org is required",
+                                message: error.message,
                             }),
                         },
                     ],
                 };
             }
+
+            const { apiVersion, outputFile } = input;
 
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -715,17 +737,17 @@ export const registerOrgTools = (server: McpServer) => {
             const result = await listMetadataTypes(
                 targetOrg,
                 apiVersion,
-                outputFile
+                outputFile,
             );
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -737,13 +759,13 @@ export const registerOrgTools = (server: McpServer) => {
                     .string()
                     .optional()
                     .describe(
-                        "Username or alias of the target org to logout from. If not specified and 'all' is false, the command will fail."
+                        "Username or alias of the target org to logout from. If not specified and 'all' is false, the command will fail.",
                     ),
                 all: z
                     .boolean()
                     .optional()
                     .describe(
-                        "Logout from all authenticated orgs including Dev Hubs, sandboxes, DE orgs, and expired, deleted, and unknown-status scratch orgs."
+                        "Logout from all authenticated orgs including Dev Hubs, sandboxes, DE orgs, and expired, deleted, and unknown-status scratch orgs.",
                     ),
             }),
         },
@@ -833,7 +855,7 @@ export const registerOrgTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
     server.tool(
@@ -843,14 +865,15 @@ export const registerOrgTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 path: z
                     .string()
                     .optional()
                     .describe(
-                        "Navigation URL path to open a specific page (e.g., 'lightning' for Lightning Experience, '/apex/YourPage' for Visualforce)."
+                        "Navigation URL path to open a specific page (e.g., 'lightning' for Lightning Experience, '/apex/YourPage' for Visualforce).",
                     ),
                 browser: z
                     .enum(["chrome", "edge", "firefox"])
@@ -860,32 +883,35 @@ export const registerOrgTools = (server: McpServer) => {
                     .boolean()
                     .optional()
                     .describe(
-                        "Open the org in the default browser using private (incognito) mode."
+                        "Open the org in the default browser using private (incognito) mode.",
                     ),
                 sourceFile: z
                     .string()
                     .optional()
                     .describe(
-                        "Path to ApexPage, FlexiPage, Flow, or Agent metadata to open in the associated Builder."
+                        "Path to ApexPage, FlexiPage, Flow, or Agent metadata to open in the associated Builder.",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg, path, browser, privateMode, sourceFile } = input;
-
-            if (!targetOrg || targetOrg.trim() === "") {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: "Target org is required",
+                                message: error.message,
                             }),
                         },
                     ],
                 };
             }
+
+            const { path, browser, privateMode, sourceFile } = input;
 
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -906,16 +932,195 @@ export const registerOrgTools = (server: McpServer) => {
                 path,
                 browser,
                 privateMode,
-                sourceFile
+                sourceFile,
             );
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
-        }
+        },
+    );
+
+    server.tool(
+        "get_default_org",
+        "Get the current default target org configured in the Salesforce CLI. This returns the org alias or username that is used as the default when no targetOrg is specified in other tool calls.",
+        {},
+        async () => {
+            try {
+                const result = await executeSfCommand(
+                    "sf config get target-org --json",
+                );
+                const value = result?.result?.[0]?.value;
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                defaultOrg: value || null,
+                                message: value
+                                    ? `Default target org is '${value}'`
+                                    : "No default target org is configured. Set one with: sf config set target-org <alias>",
+                            }),
+                        },
+                    ],
+                };
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                defaultOrg: null,
+                                message:
+                                    "No default target org is configured. Set one with: sf config set target-org <alias>",
+                            }),
+                        },
+                    ],
+                };
+            }
+        },
+    );
+
+    server.tool(
+        "set_default_org",
+        "Set the default target org for the Salesforce CLI. Once set, all tools will use this org by default when no targetOrg is specified. The value persists across sessions.",
+        {
+            input: z.object({
+                targetOrg: z
+                    .string()
+                    .describe(
+                        "Username or alias of the org to set as the default target org.",
+                    ),
+            }),
+        },
+        async ({ input }) => {
+            const { targetOrg } = input;
+
+            if (!targetOrg || targetOrg.trim() === "") {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message:
+                                    "Target org is required. Provide a username or alias.",
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            if (permissions.isReadOnly()) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message:
+                                    "Cannot set default org in read-only mode",
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            try {
+                const result = await executeSfCommand(
+                    `sf config set target-org=${targetOrg} --json`,
+                );
+                clearDefaultOrgCache();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                defaultOrg: targetOrg,
+                                message: `Default target org set to '${targetOrg}'`,
+                                result,
+                            }),
+                        },
+                    ],
+                };
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message:
+                                    error.message ||
+                                    "Failed to set default target org",
+                            }),
+                        },
+                    ],
+                };
+            }
+        },
+    );
+
+    server.tool(
+        "clear_default_org",
+        "Clear the default target org from the Salesforce CLI configuration. After clearing, all tools will require an explicit targetOrg parameter until a new default is set.",
+        {},
+        async () => {
+            if (permissions.isReadOnly()) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message:
+                                    "Cannot clear default org in read-only mode",
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            try {
+                const result = await executeSfCommand(
+                    "sf config unset target-org --json",
+                );
+                clearDefaultOrgCache();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                message:
+                                    "Default target org has been cleared. You must now specify targetOrg explicitly for each tool call.",
+                                result,
+                            }),
+                        },
+                    ],
+                };
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message:
+                                    error.message ||
+                                    "Failed to clear default target org",
+                            }),
+                        },
+                    ],
+                };
+            }
+        },
     );
 };
