@@ -143,6 +143,7 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 
 ## Development Memories
 
+- Always execute tasks in parallel when possible. If multiple independent operations need to be performed (e.g., reading files, running searches, editing unrelated files, running builds), do them simultaneously rather than sequentially. Only run tasks sequentially when there is a dependency between them.
 - Don't add indentation to the JSON results
 - Run prettier on files after making changes
 - Update the documentation after making changes
