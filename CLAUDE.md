@@ -89,7 +89,7 @@ The MCP server provides tools organized by functionality:
 2. Define the tool with Zod schema validation
 3. Implement permission checks if needed
 4. Register the tool in the export function
-5. Update `manifest.json` to include the new tool in the tools array
+5. Make sure new tools are registered in **both** the tool file and `manifest.json`
 6. Rebuild the project with `npm run build`
 7. Build the Desktop Extension with `npm run build:dxt`
 
@@ -127,6 +127,8 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 - Check org access permissions before executing any Salesforce operations
 - Use `--json` flag for CLI commands to ensure consistent JSON output
 - The server version is maintained in both `package.json` and `src/index.ts`
+- Do not add indentation to JSON results (use `JSON.stringify(result)` not `JSON.stringify(result, null, 2)`)
+- Verify permission checks are implemented for all destructive operations
 
 ## Recent Features Added
 
@@ -141,16 +143,10 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 - **Read-Only Mode Support**: All write operations respect READ_ONLY permission setting
 - **Removed Interactive Schema Tools**: Field and object generation tools removed as they require interactive CLI prompts
 
-## Development Memories
+## Workflow Rules
 
 - Always execute tasks in parallel when possible. If multiple independent operations need to be performed (e.g., reading files, running searches, editing unrelated files, running builds), do them simultaneously rather than sequentially. Only run tasks sequentially when there is a dependency between them.
-- Don't add indentation to the JSON results
-- Run prettier on files after making changes
-- Update the documentation after making changes
-- Build package and dxt file after making changes
-- Check that new tools are registered in both the tool file and manifest.json
-- Verify permission checks are implemented for destructive operations
-
-- don't forget to add shebang to the build file after creating a new build and before publishing it. it's important
-- when updating documentation don't forget to update @README.MD
-- when updating documentation, update the @manifest.json as well
+- Run prettier on all modified files after making changes
+- After making changes, always update documentation in both `README.MD` and `manifest.json`
+- After making changes, rebuild the project (`npm run build`) and the DXT file (`npm run build:dxt`)
+- Always add the shebang line to `build/index.js` after creating a new build and before publishing — this is critical
