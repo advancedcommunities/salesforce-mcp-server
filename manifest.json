@@ -195,6 +195,10 @@
         {
             "name": "set_default_org",
             "description": "Set the default target org for the Salesforce CLI"
+        },
+        {
+            "name": "clear_default_org",
+            "description": "Clear the default target org from the Salesforce CLI configuration"
         }
     ],
     "compatibility": {

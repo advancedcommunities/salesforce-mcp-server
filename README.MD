@@ -314,7 +314,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 38 powerful tools:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 39 powerful tools:
 
 ### Available Tools
 
@@ -712,6 +712,16 @@ Set the default target org for the Salesforce CLI. Once set, all tools will use 
 - "Set my default org to dev-sandbox"
 - "Change the default target org to production"
 - "Make 'staging' my default Salesforce org"
+
+#### 39. Clear Default Org
+
+Clear the default target org from the Salesforce CLI configuration. After clearing, all tools will require an explicit `targetOrg` parameter.
+
+**Example prompts:**
+
+- "Clear the default Salesforce org"
+- "Remove the default target org setting"
+- "Unset my default org"
 
 ### Practical Examples
 
