@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
+import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 const executePackageInstall = async (
     targetOrg: string,
@@ -84,8 +85,9 @@ export function registerPackageTools(server: McpServer) {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 packageId: z
                     .string()
@@ -142,6 +144,22 @@ export function registerPackageTools(server: McpServer) {
             }),
         },
         async ({ input }) => {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                error: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -156,13 +174,13 @@ export function registerPackageTools(server: McpServer) {
                 };
             }
 
-            if (!permissions.isOrgAllowed(input.targetOrg)) {
+            if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
-                                error: `Access to org '${input.targetOrg}' is not allowed`,
+                                error: `Access to org '${targetOrg}' is not allowed`,
                                 allowedOrgs: permissions.getAllowedOrgs(),
                             }),
                         },
@@ -172,7 +190,7 @@ export function registerPackageTools(server: McpServer) {
 
             try {
                 const result = await executePackageInstall(
-                    input.targetOrg,
+                    targetOrg,
                     input.packageId,
                     input.wait,
                     input.installationKey,
@@ -186,7 +204,7 @@ export function registerPackageTools(server: McpServer) {
                     content: [
                         {
                             type: "text",
-                            text: JSON.stringify(result),
+                            text: JSON.stringify({ targetOrg, ...result }),
                         },
                     ],
                 };
@@ -215,8 +233,9 @@ export function registerPackageTools(server: McpServer) {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 packageId: z
                     .string()
@@ -239,6 +258,22 @@ export function registerPackageTools(server: McpServer) {
             }),
         },
         async ({ input }) => {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                error: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -253,13 +288,13 @@ export function registerPackageTools(server: McpServer) {
                 };
             }
 
-            if (!permissions.isOrgAllowed(input.targetOrg)) {
+            if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
-                                error: `Access to org '${input.targetOrg}' is not allowed`,
+                                error: `Access to org '${targetOrg}' is not allowed`,
                                 allowedOrgs: permissions.getAllowedOrgs(),
                             }),
                         },
@@ -269,7 +304,7 @@ export function registerPackageTools(server: McpServer) {
 
             try {
                 const result = await executePackageUninstall(
-                    input.targetOrg,
+                    targetOrg,
                     input.packageId,
                     input.wait,
                     input.apiVersion
@@ -278,7 +313,7 @@ export function registerPackageTools(server: McpServer) {
                     content: [
                         {
                             type: "text",
-                            text: JSON.stringify(result),
+                            text: JSON.stringify({ targetOrg, ...result }),
                         },
                     ],
                 };

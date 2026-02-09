@@ -13,6 +13,7 @@ import {
 import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
+import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 const executeAnonymousApex = async (
     targetOrg: string,
@@ -288,8 +289,9 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org Alias to execute the code against"
+                        "Target Salesforce Org Alias to execute the code against. If not provided, uses the default org from SF CLI configuration."
                     ),
                 code: z
                     .string()
@@ -298,7 +300,24 @@ export const registerApexTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            const { targetOrg, code } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { code } = input;
 
             // Check permissions
             if (permissions.isReadOnly()) {
@@ -337,7 +356,7 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
@@ -351,8 +370,9 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org Alias to run tests against"
+                        "Target Salesforce Org Alias to run tests against. If not provided, uses the default org from SF CLI configuration."
                     ),
                 testLevel: z
                     .enum([
@@ -397,6 +417,23 @@ export const registerApexTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             // Check permissions
             if (permissions.isReadOnly()) {
                 return {
@@ -413,14 +450,14 @@ export const registerApexTools = (server: McpServer) => {
                 };
             }
 
-            if (!permissions.isOrgAllowed(input.targetOrg)) {
+            if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -428,7 +465,7 @@ export const registerApexTools = (server: McpServer) => {
             }
 
             const result = await runApexTests(
-                input.targetOrg,
+                targetOrg,
                 input.testLevel as TestLevel,
                 input.classNames,
                 input.testSuites,
@@ -441,7 +478,7 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
@@ -455,8 +492,9 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org Alias where the tests were run"
+                        "Target Salesforce Org Alias where the tests were run. If not provided, uses the default org from SF CLI configuration."
                     ),
                 testRunId: z
                     .string()
@@ -473,15 +511,32 @@ export const registerApexTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            // Check org permissions
-            if (!permissions.isOrgAllowed(input.targetOrg)) {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            // Check org permissions
+            if (!permissions.isOrgAllowed(targetOrg)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -489,7 +544,7 @@ export const registerApexTools = (server: McpServer) => {
             }
 
             const result = await getTestResults(
-                input.targetOrg,
+                targetOrg,
                 input.testRunId,
                 input.codeCoverage
             );
@@ -497,7 +552,7 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
@@ -511,8 +566,9 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org Alias to get coverage from"
+                        "Target Salesforce Org Alias to get coverage from. If not provided, uses the default org from SF CLI configuration."
                     ),
                 coverageType: z
                     .enum(["org-wide", "from-tests"])
@@ -529,15 +585,32 @@ export const registerApexTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            // Check org permissions
-            if (!permissions.isOrgAllowed(input.targetOrg)) {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${input.targetOrg}' is not in the allowed list`,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            // Check org permissions
+            if (!permissions.isOrgAllowed(targetOrg)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -545,7 +618,7 @@ export const registerApexTools = (server: McpServer) => {
             }
 
             const result = await getCodeCoverage(
-                input.targetOrg,
+                targetOrg,
                 input.coverageType as "org-wide" | "from-tests",
                 input.testRunId
             );
@@ -553,7 +626,7 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
@@ -673,13 +746,29 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration."
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
 
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -700,7 +789,7 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
@@ -714,8 +803,9 @@ export const registerApexTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Username or alias of the target org. Not required if the 'target-org' configuration variable is already set."
+                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration."
                     ),
                 logId: z
                     .string()
@@ -730,7 +820,24 @@ export const registerApexTools = (server: McpServer) => {
             }),
         },
         async ({ input }) => {
-            const { targetOrg, logId, recentLogsNumber } = input;
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { logId, recentLogsNumber } = input;
 
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -755,7 +862,7 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };

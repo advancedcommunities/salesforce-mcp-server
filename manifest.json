@@ -187,6 +187,14 @@
         {
             "name": "deploy_start",
             "description": "Deploy metadata components to a Salesforce org with test execution options"
+        },
+        {
+            "name": "get_default_org",
+            "description": "Get the current default target org configured in the Salesforce CLI"
+        },
+        {
+            "name": "set_default_org",
+            "description": "Set the default target org for the Salesforce CLI"
         }
     ],
     "compatibility": {

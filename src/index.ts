@@ -49,11 +49,8 @@ function buildServerDescription(): string {
 
 const server = new McpServer({
     name: "salesforce-mcp-server",
-    version: "1.5.4",
+    version: "1.5.5",
     description: buildServerDescription(),
-    capabilities: {
-        tools: {},
-    },
 });
 
 registerApexTools(server);

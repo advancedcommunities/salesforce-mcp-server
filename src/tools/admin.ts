@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
+import { getDefaultOrg } from "../utils/resolveTargetOrg.js";
 
 export const registerAdminTools = (server: McpServer) => {
     server.tool(
@@ -9,6 +10,7 @@ export const registerAdminTools = (server: McpServer) => {
         {},
         async () => {
             const allowedOrgs = permissions.getAllowedOrgs();
+            const defaultOrg = await getDefaultOrg();
             return {
                 content: [
                     {
@@ -16,6 +18,7 @@ export const registerAdminTools = (server: McpServer) => {
                         text: JSON.stringify({
                             readOnly: permissions.isReadOnly(),
                             allowedOrgs: allowedOrgs,
+                            defaultOrg: defaultOrg || "Not configured",
                             message:
                                 allowedOrgs === "ALL"
                                     ? "All orgs are allowed"

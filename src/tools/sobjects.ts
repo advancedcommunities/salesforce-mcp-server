@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
+import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 const executeSobjectList = async (targetOrg: string) => {
     const sfCommand = `sf sobject list --sobject all --target-org ${targetOrg} --json`;
@@ -36,14 +37,30 @@ export const registerSObjectTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org Alias to execute the code against"
+                        "Target Salesforce Org Alias to execute the code against. If not provided, uses the default org from SF CLI configuration.",
                     ),
             }),
         },
         async ({ input }) => {
-            const { targetOrg } = input;
-            
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             // Check org permissions
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -64,7 +81,7 @@ export const registerSObjectTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
@@ -78,15 +95,33 @@ export const registerSObjectTools = (server: McpServer) => {
             input: z.object({
                 targetOrg: z
                     .string()
+                    .optional()
                     .describe(
-                        "Target Salesforce Org Alias to execute the code against"
+                        "Target Salesforce Org Alias to execute the code against. If not provided, uses the default org from SF CLI configuration.",
                     ),
                 sObjectName: z.string().describe("Name of the SObject to describe"),
             }),
         },
         async ({ input }) => {
-            const { targetOrg, sObjectName } = input;
-            
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { sObjectName } = input;
+
             // Check org permissions
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -107,7 +142,7 @@ export const registerSObjectTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
             };
