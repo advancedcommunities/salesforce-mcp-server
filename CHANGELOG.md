@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] - 2026-02-09
+
+### Added
+
+- **Default Org Fallback**: All 24 tools that interact with a Salesforce org now accept `targetOrg` as optional — when omitted, the server resolves the default org from SF CLI (`sf config get target-org`)
+- **New `resolveTargetOrg` utility** (`src/utils/resolveTargetOrg.ts`): Centralized default org resolution with 30-second caching to avoid repeated subprocess calls
+- **New tools for default org management**:
+    - `get_default_org` - View the current default target org
+    - `set_default_org` - Change the default target org
+    - `clear_default_org` - Unset the default target org
+- **Org visibility in responses**: Every tool response now includes `targetOrg` so users always see which org was used, especially when the default fallback is applied
+- **`get_server_permissions` enhanced**: Now shows the configured default org in its output
+
+### Changed
+
+- **CLAUDE.md Restructured**: Converted legacy "Development Memories" section into native Claude Code instructions
+    - Renamed "Development Memories" to "Workflow Rules" with clear, actionable directives
+    - Moved code-related rules (JSON formatting, permission checks) into "Important Implementation Notes"
+    - Integrated tool registration reminder into "Adding New Tools" steps
+    - Consolidated documentation update reminders into single workflow rule
+    - Added parallel task execution instruction for improved development efficiency
+
 ## [1.5.5] - 2025-10-26
 
 ### Fixed
