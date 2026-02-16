@@ -6,7 +6,8 @@
     "scripts": {
         "build": "tsc && chmod 755 build/index.js",
         "dev": "npm run build && npx @modelcontextprotocol/inspector node ./build/index.js",
-        "build:mcpb": "npm run build && mkdir -p dist && npx mcpb pack . dist/salesforce-mcp-server.mcpb"
+        "build:mcpb": "npm run build && mkdir -p dist && npx mcpb pack . dist/salesforce-mcp-server.mcpb",
+        "prepublish:changelog": "claude -p --model haiku --allowedTools Bash,Edit,Read,Glob,Grep -- 'Review all git commits since the last version tag (use git log and git diff). Summarize changes into @CHANGELOG.md following the existing format. Bump the version in package.json, manifest.json, server.json, and src/index.ts.'"
     },
     "keywords": [
         "salesforce",
