@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerApexTools } from "./tools/apex.js";
@@ -19,6 +22,14 @@ import { registerPrompts } from "./prompts/prompts.js";
 import { permissions } from "./config/permissions.js";
 import { initLogger, logger } from "./utils/logger.js";
 import { initElicitation } from "./utils/elicitation.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function loadServerIcon(): string {
+    const iconPath = join(__dirname, "..", "icon.png");
+    const iconData = readFileSync(iconPath);
+    return `data:image/png;base64,${iconData.toString("base64")}`;
+}
 
 /**
  * Builds a dynamic server description based on current permissions and capabilities
@@ -56,8 +67,16 @@ function buildServerDescription(): string {
 const server = new McpServer(
     {
         name: "salesforce-mcp-server",
+        title: "Salesforce MCP Server",
         version: "1.5.6",
         description: buildServerDescription(),
+        icons: [
+            {
+                src: loadServerIcon(),
+                mimeType: "image/png",
+                sizes: ["512x512"],
+            },
+        ],
     },
     { capabilities: { logging: {} } },
 );

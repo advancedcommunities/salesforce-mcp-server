@@ -845,6 +845,10 @@ Prompt arguments and resource URI variables support auto-completion via the MCP 
 
 Completions are powered by the SDK's `completable()` wrapper and require no additional client configuration.
 
+### Server Title & Icon
+
+The server provides a human-readable `title` ("Salesforce MCP Server") and an embedded `icon` in its metadata. Clients that support the MCP `Implementation` metadata (SDK 1.25+) will display the server name and icon in their UI. Tool-level icons are not currently supported by the MCP SDK.
+
 ### Structured Tool Output
 
 The following tools support MCP structured output (`outputSchema` + `structuredContent`) for programmatic result parsing:
