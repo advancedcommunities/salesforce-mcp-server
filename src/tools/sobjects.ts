@@ -4,7 +4,7 @@ import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
-const executeSobjectList = async (targetOrg: string) => {
+export const executeSobjectList = async (targetOrg: string) => {
     const sfCommand = `sf sobject list --sobject all --target-org ${targetOrg} --json`;
 
     try {
@@ -15,7 +15,7 @@ const executeSobjectList = async (targetOrg: string) => {
     }
 };
 
-const executeSObjectDescribe = async (
+export const executeSObjectDescribe = async (
     targetOrg: string,
     sObjectName: string,
 ) => {

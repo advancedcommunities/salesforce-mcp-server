@@ -14,6 +14,7 @@ import { registerSchemaTools } from "./tools/schema.js";
 import { registerSearchTools } from "./tools/search.js";
 import { registerLightningTools } from "./tools/lightning.js";
 import { registerProjectTools } from "./tools/project.js";
+import { registerResources } from "./resources/resources.js";
 import { permissions } from "./config/permissions.js";
 
 /**
@@ -43,6 +44,7 @@ function buildServerDescription(): string {
     }
 
     description += `\nTools: 39 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment)`;
+    description += `\nResources: 5 available (permissions, org metadata, objects, object schema, limits)`;
 
     return description;
 }
@@ -66,6 +68,7 @@ registerSchemaTools(server);
 registerSearchTools(server);
 registerLightningTools(server);
 registerProjectTools(server);
+registerResources(server);
 
 async function main() {
     const transport = new StdioServerTransport();

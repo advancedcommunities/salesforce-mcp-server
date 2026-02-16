@@ -689,7 +689,7 @@ Deploy metadata components to a Salesforce org with various configuration option
 
 - "Deploy all metadata from force-app directory to my dev org"
 - "Validate deployment to production with all tests but don't save (dry run)"
-- "Deploy specific Apex classes matching 'Account*' pattern to sandbox"
+- "Deploy specific Apex classes matching 'Account\*' pattern to sandbox"
 - "Deploy using package.xml manifest with RunLocalTests"
 - "Deploy metadata and run specific test classes: TestClass1, TestClass2"
 
@@ -722,6 +722,20 @@ Clear the default target org from the Salesforce CLI configuration. After cleari
 - "Clear the default Salesforce org"
 - "Remove the default target org setting"
 - "Unset my default org"
+
+### Available Resources
+
+The server exposes MCP Resources that clients can browse and include in conversations for contextual data about your Salesforce orgs.
+
+| #   | Resource           | URI                                      | Description                                                                    |
+| --- | ------------------ | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| 1   | Server Permissions | `salesforce://permissions`               | Current server permission settings (read-only mode, allowed orgs, default org) |
+| 2   | Org Metadata       | `salesforce://org/{alias}/metadata`      | Org metadata summary with available metadata types                             |
+| 3   | Org Objects        | `salesforce://org/{alias}/objects`       | List of all standard and custom SObjects in the org                            |
+| 4   | Object Schema      | `salesforce://org/{alias}/object/{name}` | Detailed schema for a specific SObject (fields, relationships, record types)   |
+| 5   | Org Limits         | `salesforce://org/{alias}/limits`        | API limits and usage (daily API calls, storage, governor limits)               |
+
+Resources support autocomplete for org aliases and object names. Template resources (2-5) respect the `ALLOWED_ORGS` permission setting.
 
 ### Practical Examples
 
