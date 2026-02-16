@@ -14,7 +14,7 @@ import {
 /**
  * List orgs that the server is permitted to access.
  */
-async function getAccessibleOrgs() {
+export async function getAccessibleOrgs() {
     const orgs = await listAllOrgs();
     const allowedOrgs = permissions.getAllowedOrgs();
 
@@ -42,7 +42,7 @@ function getOrgIdentifier(org: {
 /**
  * Autocomplete helper for the {alias} URI variable.
  */
-async function completeAlias(value: string): Promise<string[]> {
+export async function completeAlias(value: string): Promise<string[]> {
     const orgs = await getAccessibleOrgs();
     const identifiers = orgs.map(getOrgIdentifier);
     return identifiers.filter((id) =>

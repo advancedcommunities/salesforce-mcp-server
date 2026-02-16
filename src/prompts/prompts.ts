@@ -1,10 +1,21 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
-import { executeSObjectDescribe } from "../tools/sobjects.js";
+import {
+    executeSobjectList,
+    executeSObjectDescribe,
+} from "../tools/sobjects.js";
 import { getOrgInfo } from "../shared/connection.js";
+import { completeAlias } from "../resources/resources.js";
+
+/**
+ * Adapter for completeAlias that accepts optional string values.
+ * Needed because z.string().optional() schemas produce string | undefined.
+ */
+const completeOptionalAlias = (value?: string) => completeAlias(value ?? "");
 
 /**
  * Resolve and validate org access for prompts.
@@ -46,15 +57,33 @@ export function registerPrompts(server: McpServer) {
             description:
                 "Describe an SObject and help build a SOQL query step by step",
             argsSchema: {
-                objectName: z
-                    .string()
-                    .describe("API name of the SObject to query"),
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce org alias. Uses default org if not provided.",
-                    ),
+                objectName: completable(
+                    z.string().describe("API name of the SObject to query"),
+                    async (value, context) => {
+                        const orgAlias = context?.arguments?.targetOrg;
+                        try {
+                            const org = await resolveTargetOrg(orgAlias);
+                            const result = await executeSobjectList(org);
+                            const objects = result.result as string[];
+                            return objects.filter((obj) =>
+                                obj
+                                    .toLowerCase()
+                                    .startsWith(value.toLowerCase()),
+                            );
+                        } catch {
+                            return [];
+                        }
+                    },
+                ),
+                targetOrg: completable(
+                    z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce org alias. Uses default org if not provided.",
+                        ),
+                    completeOptionalAlias,
+                ),
             },
         },
         async (args) => {
@@ -161,12 +190,15 @@ Then build the final SOQL query for me.`,
                 className: z
                     .string()
                     .describe("Name of the Apex class to review"),
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce org alias. Uses default org if not provided.",
-                    ),
+                targetOrg: completable(
+                    z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce org alias. Uses default org if not provided.",
+                        ),
+                    completeOptionalAlias,
+                ),
             },
         },
         async (args) => {
@@ -230,12 +262,15 @@ Provide specific findings with line references and suggested improvements.`,
             description:
                 "Fetch org info, API limits, and test coverage to assess org health",
             argsSchema: {
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce org alias. Uses default org if not provided.",
-                    ),
+                targetOrg: completable(
+                    z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce org alias. Uses default org if not provided.",
+                        ),
+                    completeOptionalAlias,
+                ),
             },
         },
         async (args) => {
@@ -326,12 +361,15 @@ Please analyze this data and provide:
             description:
                 "Fetch org limits and coverage to generate a pre-deployment readiness checklist",
             argsSchema: {
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce org alias. Uses default org if not provided.",
-                    ),
+                targetOrg: completable(
+                    z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce org alias. Uses default org if not provided.",
+                        ),
+                    completeOptionalAlias,
+                ),
             },
         },
         async (args) => {
@@ -420,12 +458,15 @@ Please review this checklist against the org data and help me:
             description:
                 "Fetch an Apex debug log (by ID or most recent) and analyze it for errors and performance issues",
             argsSchema: {
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce org alias. Uses default org if not provided.",
-                    ),
+                targetOrg: completable(
+                    z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce org alias. Uses default org if not provided.",
+                        ),
+                    completeOptionalAlias,
+                ),
                 logId: z
                     .string()
                     .optional()

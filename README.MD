@@ -829,6 +829,22 @@ Destructive operations request user confirmation via MCP elicitation before proc
 
 Elicitation degrades gracefully: if the client does not support elicitation, or the server has not been initialized, operations proceed without confirmation. This ensures backward compatibility with all MCP clients.
 
+### Completions (Argument Auto-Complete)
+
+Prompt arguments and resource URI variables support auto-completion via the MCP Completions API. When a client sends a `completion/complete` request, the server returns matching suggestions.
+
+**Prompt argument completions:**
+
+- `targetOrg` — All 5 prompts auto-complete with connected org aliases filtered by `ALLOWED_ORGS`
+- `objectName` (soql_builder) — Auto-completes with SObject API names from the resolved target org
+
+**Resource URI completions:**
+
+- `{alias}` — All template resources auto-complete with connected org aliases
+- `{name}` (org_object_schema) — Auto-completes with SObject names from the resolved org
+
+Completions are powered by the SDK's `completable()` wrapper and require no additional client configuration.
+
 ### Structured Tool Output
 
 The following tools support MCP structured output (`outputSchema` + `structuredContent`) for programmatic result parsing:
