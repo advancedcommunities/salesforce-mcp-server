@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
 import { getOrgInfo, getOrgAccessToken } from "../shared/connection.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { requestConfirmation } from "../utils/elicitation.js";
 import { exec } from "node:child_process";
 import { platform } from "node:os";
 import z from "zod";
@@ -451,6 +452,11 @@ export const registerOrgTools = (server: McpServer) => {
             }
 
             const { sObject, recordId } = input;
+
+            const { confirmed, message } = await requestConfirmation(
+                `Delete ${sObject} record ${recordId} from org '${targetOrg}'?`,
+            );
+            if (!confirmed) return createErrorResponse(message!);
 
             return executeSalesforceRestApi(
                 targetOrg,

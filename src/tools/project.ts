@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { requestConfirmation } from "../utils/elicitation.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const deployStart = async (
@@ -185,6 +186,26 @@ export const registerProjectTools = (server: McpServer) => {
                         },
                     ],
                 };
+            }
+
+            if (!dryRun) {
+                const { confirmed, message: confirmMessage } =
+                    await requestConfirmation(
+                        `Deploy metadata to org '${targetOrg}'?`,
+                    );
+                if (!confirmed) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: false,
+                                    message: confirmMessage,
+                                }),
+                            },
+                        ],
+                    };
+                }
             }
 
             reportProgress("Deploying metadata...");

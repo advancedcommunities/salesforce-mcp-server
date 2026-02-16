@@ -18,6 +18,7 @@ import { registerResources } from "./resources/resources.js";
 import { registerPrompts } from "./prompts/prompts.js";
 import { permissions } from "./config/permissions.js";
 import { initLogger, logger } from "./utils/logger.js";
+import { initElicitation } from "./utils/elicitation.js";
 
 /**
  * Builds a dynamic server description based on current permissions and capabilities
@@ -62,6 +63,7 @@ const server = new McpServer(
 );
 
 initLogger(server);
+initElicitation(server);
 
 registerApexTools(server);
 registerOrgTools(server);

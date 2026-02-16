@@ -3,6 +3,7 @@ import { z } from "zod";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { requestConfirmation } from "../utils/elicitation.js";
 
 const executePackageInstall = async (
     targetOrg: string,
@@ -314,6 +315,23 @@ export function registerPackageTools(server: McpServer) {
                             text: JSON.stringify({
                                 error: `Access to org '${targetOrg}' is not allowed`,
                                 allowedOrgs: permissions.getAllowedOrgs(),
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const { confirmed, message: confirmMessage } =
+                await requestConfirmation(
+                    `Uninstall package ${input.packageId} from org '${targetOrg}'?`,
+                );
+            if (!confirmed) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                error: confirmMessage,
                             }),
                         },
                     ],

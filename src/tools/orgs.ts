@@ -7,6 +7,7 @@ import {
     getDefaultOrg,
     clearDefaultOrgCache,
 } from "../utils/resolveTargetOrg.js";
+import { requestConfirmation } from "../utils/elicitation.js";
 import z from "zod";
 
 /**
@@ -929,6 +930,25 @@ export const registerOrgTools = (server: McpServer) => {
                                 success: false,
                                 message:
                                     "Cannot logout from all orgs when ALLOWED_ORGS is restricted",
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            const confirmMsg = all
+                ? "Log out of ALL authenticated Salesforce orgs?"
+                : `Log out of Salesforce org '${targetOrg}'?`;
+            const { confirmed, message: confirmMessage } =
+                await requestConfirmation(confirmMsg);
+            if (!confirmed) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: confirmMessage,
                             }),
                         },
                     ],

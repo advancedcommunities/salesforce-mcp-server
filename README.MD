@@ -816,6 +816,19 @@ Long-running tools report real-time progress via MCP progress notifications (`no
 
 Progress is reported as fire-and-forget notifications and will never interrupt tool execution. Clients that don't provide a progress token will not receive any notifications.
 
+### Elicitation (User Confirmation)
+
+Destructive operations request user confirmation via MCP elicitation before proceeding. When a client supports elicitation, the server will prompt the user with a confirmation dialog before executing the operation.
+
+**Tools that request confirmation:**
+
+- `delete_record` — Confirms before permanently deleting a Salesforce record
+- `package_uninstall` — Confirms before uninstalling a package from the org
+- `logout` — Confirms before logging out of a specific org or all orgs
+- `deploy_start` — Confirms before deploying metadata (skipped for dry-run/validation-only deployments)
+
+Elicitation degrades gracefully: if the client does not support elicitation, or the server has not been initialized, operations proceed without confirmation. This ensures backward compatibility with all MCP clients.
+
 ### Structured Tool Output
 
 The following tools support MCP structured output (`outputSchema` + `structuredContent`) for programmatic result parsing:
