@@ -52,7 +52,17 @@ let targetOrg: string;
 try {
     targetOrg = await resolveTargetOrg(input.targetOrg);
 } catch (error: any) {
-    return { content: [{ type: "text", text: JSON.stringify({ success: false, message: error.message }) }] };
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify({
+                    success: false,
+                    message: error.message,
+                }),
+            },
+        ],
+    };
 }
 
 // 3. Check permissions
@@ -145,7 +155,7 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 
 ## Workflow Rules
 
-- Always execute tasks in parallel when possible. If multiple independent operations need to be performed (e.g., reading files, running searches, editing unrelated files, running builds), do them simultaneously rather than sequentially. Only run tasks sequentially when there is a dependency between them.
+- Always execute tasks and agents in parallel when possible. If multiple independent operations need to be performed (e.g., reading files, running searches, editing unrelated files, running builds), do them simultaneously rather than sequentially. Only run tasks and agents sequentially when there is a dependency between them.
 - Run prettier on all modified files after making changes
 - After making changes, always update documentation in both `README.MD` and `manifest.json`
 - After making changes, rebuild the project (`npm run build`) and the DXT file (`npm run build:dxt`)
