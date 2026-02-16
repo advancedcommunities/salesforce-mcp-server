@@ -143,7 +143,7 @@ const executeSalesforceRestApi = async (
         });
 
         if (method === "POST") {
-            const result = await response.json();
+            const result = (await response.json()) as Record<string, unknown>;
             if (response.ok) {
                 return createSuccessResponse(
                     `Successfully created ${sObject} record`,
