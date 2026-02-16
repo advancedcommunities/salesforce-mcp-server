@@ -1,6 +1,8 @@
 # Salesforce MCP Server
 
 [![NPM Version](https://img.shields.io/npm/v/@advanced-communities/salesforce-mcp-server)](https://www.npmjs.com/package/@advanced-communities/salesforce-mcp-server)
+[![NPM Downloads](https://img.shields.io/npm/dm/@advanced-communities/salesforce-mcp-server)](https://www.npmjs.com/package/@advanced-communities/salesforce-mcp-server)
+[![GitHub Downloads](https://img.shields.io/github/downloads/advancedcommunities/salesforce-mcp-server/total)](https://github.com/advancedcommunities/salesforce-mcp-server/releases)
 [![License](https://img.shields.io/npm/l/@advanced-communities/salesforce-mcp-server)](https://github.com/advancedcommunities/salesforce-mcp-server/blob/main/LICENSE)
 
 ## What is it
