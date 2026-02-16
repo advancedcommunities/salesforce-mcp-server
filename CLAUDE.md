@@ -11,8 +11,8 @@ npm run build
 # Run development mode with MCP inspector for debugging
 npm run dev
 
-# Build Desktop Extension (.dxt) for distribution
-npm run build:dxt
+# Build MCP Bundle (.mcpb) for distribution
+npm run build:mcpb
 
 # Install dependencies
 npm install
@@ -101,7 +101,7 @@ The MCP server provides tools organized by functionality:
 4. Register the tool in the export function
 5. Make sure new tools are registered in **both** the tool file and `manifest.json`
 6. Rebuild the project with `npm run build`
-7. Build the Desktop Extension with `npm run build:dxt`
+7. Build the MCP Bundle with `npm run build:mcpb`
 
 ### Error Handling
 
@@ -127,7 +127,7 @@ The MCP server provides tools organized by functionality:
 
 ### Distribution
 
-The project supports Desktop Extension (.dxt) packaging for one-click installation. The `manifest.json` file defines the extension metadata, tools, and user configuration options.
+The project supports MCP Bundle (.mcpb) packaging for one-click installation. The `manifest.json` file defines the extension metadata, tools, and user configuration options.
 
 ## Important Implementation Notes
 
@@ -158,5 +158,5 @@ The project supports Desktop Extension (.dxt) packaging for one-click installati
 - Always execute tasks and agents in parallel when possible. If multiple independent operations need to be performed (e.g., reading files, running searches, editing unrelated files, running builds), do them simultaneously rather than sequentially. Only run tasks and agents sequentially when there is a dependency between them.
 - Run prettier on all modified files after making changes
 - After making changes, always update documentation in both `README.MD` and `manifest.json`
-- After making changes, rebuild the project (`npm run build`) and the DXT file (`npm run build:dxt`)
+- After making changes, rebuild the project (`npm run build`) and the MCPB file (`npm run build:mcpb`)
 - Always add the shebang line to `build/index.js` after creating a new build and before publishing — this is critical

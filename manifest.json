@@ -1,5 +1,5 @@
 {
-    "dxt_version": "0.2",
+    "manifest_version": "0.3",
     "name": "salesforce-mcp-server",
     "display_name": "Salesforce MCP Server",
     "version": "1.5.6",
@@ -203,6 +203,8 @@
     ],
     "compatibility": {
         "platforms": ["win32", "darwin", "linux"],
-        "node": ">=18.0.0"
+        "runtimes": {
+            "node": ">=18.0.0"
+        }
     }
 }

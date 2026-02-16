@@ -6,7 +6,7 @@
     "scripts": {
         "build": "tsc && chmod 755 build/index.js",
         "dev": "npm run build && npx @modelcontextprotocol/inspector node ./build/index.js",
-        "build:dxt": "npm run build && mkdir -p dist && npx dxt pack . dist/salesforce-mcp-server.dxt"
+        "build:mcpb": "npm run build && mkdir -p dist && npx mcpb pack . dist/salesforce-mcp-server.mcpb"
     },
     "keywords": [
         "salesforce",
@@ -43,7 +43,7 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@anthropic-ai/dxt": "^0.2.6",
+        "@anthropic-ai/mcpb": "^2.1.2",
         "@types/node": "^24.0.1",
         "typescript": "^5.8.3"
     }
