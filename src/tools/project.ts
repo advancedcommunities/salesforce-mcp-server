@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const deployStart = async (
     targetOrg: string,
@@ -123,7 +124,10 @@ export const registerProjectTools = (server: McpServer) => {
                 openWorldHint: true,
             },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 3);
+
+            reportProgress("Resolving target org...");
             let targetOrg: string;
             try {
                 targetOrg = await resolveTargetOrg(input.targetOrg);
@@ -152,6 +156,7 @@ export const registerProjectTools = (server: McpServer) => {
                 testLevel,
             } = input;
 
+            reportProgress("Validating permissions...");
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -182,6 +187,7 @@ export const registerProjectTools = (server: McpServer) => {
                 };
             }
 
+            reportProgress("Deploying metadata...");
             const result = await deployStart(
                 targetOrg,
                 dryRun,

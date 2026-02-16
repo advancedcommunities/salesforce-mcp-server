@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
+import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const runCodeAnalyzer = async (
     workspace?: string[],
@@ -138,7 +139,9 @@ export const registerCodeAnalyzerTools = (server: McpServer) => {
                 openWorldHint: true,
             },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 2);
+
             const {
                 workspace,
                 target,
@@ -148,6 +151,7 @@ export const registerCodeAnalyzerTools = (server: McpServer) => {
                 configFile,
             } = input;
 
+            reportProgress("Validating permissions...");
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -164,6 +168,7 @@ export const registerCodeAnalyzerTools = (server: McpServer) => {
             }
 
             try {
+                reportProgress("Running code analysis...");
                 const result = await runCodeAnalyzer(
                     workspace,
                     target,

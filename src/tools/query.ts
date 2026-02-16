@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const executeSoqlQuery = async (
     targetOrg: string,
@@ -218,7 +219,10 @@ export const registerQueryTools = (server: McpServer) => {
                 openWorldHint: true,
             },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 3);
+
+            reportProgress("Resolving target org...");
             let targetOrg: string;
             try {
                 targetOrg = await resolveTargetOrg(input.targetOrg);
@@ -246,6 +250,7 @@ export const registerQueryTools = (server: McpServer) => {
             } = input;
 
             // Check org permissions
+            reportProgress("Validating permissions...");
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
                     content: [
@@ -260,6 +265,7 @@ export const registerQueryTools = (server: McpServer) => {
                 };
             }
 
+            reportProgress("Exporting records to file...");
             const result = await executeSoqlQueryToFile(
                 targetOrg,
                 sObject,

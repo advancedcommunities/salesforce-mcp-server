@@ -741,13 +741,13 @@ Resources support autocomplete for org aliases and object names. Template resour
 
 The server provides MCP Prompts — templated workflows that appear as slash commands in clients like Claude Desktop. They fetch live org data and guide the AI through common Salesforce tasks.
 
-| #   | Prompt             | Arguments                              | Description                                                                |
-| --- | ------------------ | -------------------------------------- | -------------------------------------------------------------------------- |
-| 1   | `soql_builder`     | `objectName` (required), `targetOrg`   | Describe an SObject and interactively build a SOQL query step by step      |
-| 2   | `apex_review`      | `className` (required), `targetOrg`    | Fetch an Apex class from the org and perform a structured code review      |
-| 3   | `org_health_check` | `targetOrg`                            | Fetch org info, API limits, and test coverage to assess org health         |
-| 4   | `deploy_checklist` | `targetOrg`                            | Generate a pre-deployment readiness checklist with live org data           |
-| 5   | `debug_apex`       | `targetOrg`, `logId`                   | Fetch and analyze an Apex debug log for errors and performance issues      |
+| #   | Prompt             | Arguments                            | Description                                                           |
+| --- | ------------------ | ------------------------------------ | --------------------------------------------------------------------- |
+| 1   | `soql_builder`     | `objectName` (required), `targetOrg` | Describe an SObject and interactively build a SOQL query step by step |
+| 2   | `apex_review`      | `className` (required), `targetOrg`  | Fetch an Apex class from the org and perform a structured code review |
+| 3   | `org_health_check` | `targetOrg`                          | Fetch org info, API limits, and test coverage to assess org health    |
+| 4   | `deploy_checklist` | `targetOrg`                          | Generate a pre-deployment readiness checklist with live org data      |
+| 5   | `debug_apex`       | `targetOrg`, `logId`                 | Fetch and analyze an Apex debug log for errors and performance issues |
 
 All prompts respect the `ALLOWED_ORGS` permission setting and use the default org when `targetOrg` is not provided.
 
@@ -800,6 +800,21 @@ The server emits structured MCP log messages (`notifications/message`) with type
 - `critical` — Authentication/auth-info failures
 
 Clients can set a minimum log level via the `logging/setLevel` request to filter out lower-severity messages.
+
+### Progress Reporting
+
+Long-running tools report real-time progress via MCP progress notifications (`notifications/progress`). Clients that include a `progressToken` in `_meta` when calling a tool will receive progress updates with step messages.
+
+**Tools with progress reporting:**
+
+- `deploy_start` — Resolving target org → Validating permissions → Deploying metadata
+- `run_apex_tests` — Resolving target org → Validating permissions → Running Apex tests
+- `scanner_run` — Validating permissions → Running scan
+- `scanner_run_dfa` — Validating permissions → Running data flow analysis
+- `run_code_analyzer` — Validating permissions → Running code analysis
+- `query_records_to_file` — Resolving target org → Validating permissions → Exporting records to file
+
+Progress is reported as fire-and-forget notifications and will never interrupt tool execution. Clients that don't provide a progress token will not receive any notifications.
 
 ### Structured Tool Output
 

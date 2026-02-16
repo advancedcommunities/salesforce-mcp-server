@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
+import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const runScanner = async (
     target?: string[],
@@ -258,7 +259,9 @@ export const registerScannerTools = (server: McpServer) => {
                 openWorldHint: true,
             },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 2);
+
             const {
                 target,
                 category,
@@ -275,6 +278,7 @@ export const registerScannerTools = (server: McpServer) => {
                 verboseViolations,
             } = input;
 
+            reportProgress("Validating permissions...");
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -291,6 +295,7 @@ export const registerScannerTools = (server: McpServer) => {
             }
 
             try {
+                reportProgress("Running scan...");
                 const result = await runScanner(
                     target,
                     category,
@@ -433,7 +438,9 @@ export const registerScannerTools = (server: McpServer) => {
                 openWorldHint: true,
             },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 2);
+
             const {
                 target,
                 projectDir,
@@ -451,6 +458,7 @@ export const registerScannerTools = (server: McpServer) => {
                 pathExpLimit,
             } = input;
 
+            reportProgress("Validating permissions...");
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -467,6 +475,7 @@ export const registerScannerTools = (server: McpServer) => {
             }
 
             try {
+                reportProgress("Running data flow analysis...");
                 const result = await runScannerDfa(
                     target,
                     projectDir,

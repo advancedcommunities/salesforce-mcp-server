@@ -14,6 +14,7 @@ import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const executeAnonymousApex = async (
     targetOrg: string,
@@ -436,7 +437,10 @@ export const registerApexTools = (server: McpServer) => {
                 openWorldHint: true,
             },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 3);
+
+            reportProgress("Resolving target org...");
             let targetOrg: string;
             try {
                 targetOrg = await resolveTargetOrg(input.targetOrg);
@@ -455,6 +459,7 @@ export const registerApexTools = (server: McpServer) => {
             }
 
             // Check permissions
+            reportProgress("Validating permissions...");
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -484,6 +489,7 @@ export const registerApexTools = (server: McpServer) => {
                 };
             }
 
+            reportProgress("Running Apex tests...");
             const result = await runApexTests(
                 targetOrg,
                 input.testLevel as TestLevel,
