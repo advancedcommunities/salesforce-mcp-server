@@ -737,6 +737,20 @@ The server exposes MCP Resources that clients can browse and include in conversa
 
 Resources support autocomplete for org aliases and object names. Template resources (2-5) respect the `ALLOWED_ORGS` permission setting.
 
+### Available Prompts
+
+The server provides MCP Prompts — templated workflows that appear as slash commands in clients like Claude Desktop. They fetch live org data and guide the AI through common Salesforce tasks.
+
+| #   | Prompt             | Arguments                              | Description                                                                |
+| --- | ------------------ | -------------------------------------- | -------------------------------------------------------------------------- |
+| 1   | `soql_builder`     | `objectName` (required), `targetOrg`   | Describe an SObject and interactively build a SOQL query step by step      |
+| 2   | `apex_review`      | `className` (required), `targetOrg`    | Fetch an Apex class from the org and perform a structured code review      |
+| 3   | `org_health_check` | `targetOrg`                            | Fetch org info, API limits, and test coverage to assess org health         |
+| 4   | `deploy_checklist` | `targetOrg`                            | Generate a pre-deployment readiness checklist with live org data           |
+| 5   | `debug_apex`       | `targetOrg`, `logId`                   | Fetch and analyze an Apex debug log for errors and performance issues      |
+
+All prompts respect the `ALLOWED_ORGS` permission setting and use the default org when `targetOrg` is not provided.
+
 ### Practical Examples
 
 #### Example 1: Data Analysis
