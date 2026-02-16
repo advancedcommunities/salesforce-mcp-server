@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
 import { getOrgInfo, getOrgAccessToken } from "../shared/connection.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { requestConfirmation } from "../utils/elicitation.js";
 import { exec } from "node:child_process";
 import { platform } from "node:os";
 import z from "zod";
@@ -15,7 +16,7 @@ type McpResponse = {
 
 const createErrorResponse = (
     message: string,
-    additional?: object
+    additional?: object,
 ): McpResponse => ({
     content: [
         {
@@ -31,7 +32,7 @@ const createErrorResponse = (
 
 const createSuccessResponse = (
     message: string,
-    data?: object
+    data?: object,
 ): McpResponse => ({
     content: [
         {
@@ -48,14 +49,14 @@ const createSuccessResponse = (
 const checkOrgPermissions = (targetOrg: string): McpResponse | null => {
     if (!permissions.isOrgAllowed(targetOrg)) {
         return createErrorResponse(
-            `Access to org '${targetOrg}' is not allowed`
+            `Access to org '${targetOrg}' is not allowed`,
         );
     }
     return null;
 };
 
 const parseJsonData = (
-    jsonString: string
+    jsonString: string,
 ): { data: any; error: McpResponse | null } => {
     try {
         return { data: JSON.parse(jsonString), error: null };
@@ -68,7 +69,7 @@ const parseJsonData = (
 };
 
 const prepareSalesforceRequest = async (
-    targetOrg: string
+    targetOrg: string,
 ): Promise<{
     orgInfo?: any;
     accessToken?: string;
@@ -78,7 +79,7 @@ const prepareSalesforceRequest = async (
     if (!orgInfo) {
         return {
             error: createErrorResponse(
-                `Could not get org info for ${targetOrg}`
+                `Could not get org info for ${targetOrg}`,
             ),
         };
     }
@@ -90,7 +91,7 @@ const prepareSalesforceRequest = async (
 const getSalesforceEndpoint = (
     orgInfo: any,
     sObject: string,
-    recordId?: string
+    recordId?: string,
 ) => {
     const baseUrl = `${orgInfo.instanceUrl}/services/data/v${orgInfo.apiVersion}/sobjects/${sObject}`;
     return recordId ? `${baseUrl}/${recordId}` : `${baseUrl}/`;
@@ -101,7 +102,7 @@ const executeSalesforceRestApi = async (
     sObject: string,
     method: string,
     recordId?: string,
-    recordData?: any
+    recordData?: any,
 ): Promise<McpResponse> => {
     const permissionError = checkOrgPermissions(targetOrg);
     if (permissionError) return permissionError;
@@ -114,17 +115,16 @@ const executeSalesforceRestApi = async (
             method === "POST"
                 ? "create"
                 : method === "PATCH"
-                ? "update"
-                : "delete";
+                  ? "update"
+                  : "delete";
         return createErrorResponse(
-            `Cannot ${action} records: Server is in read-only mode`
+            `Cannot ${action} records: Server is in read-only mode`,
         );
     }
 
     try {
-        const { orgInfo, accessToken, error } = await prepareSalesforceRequest(
-            targetOrg
-        );
+        const { orgInfo, accessToken, error } =
+            await prepareSalesforceRequest(targetOrg);
         if (error) return error;
 
         const endpoint = getSalesforceEndpoint(orgInfo!, sObject, recordId);
@@ -143,7 +143,7 @@ const executeSalesforceRestApi = async (
         });
 
         if (method === "POST") {
-            const result = await response.json();
+            const result = (await response.json()) as Record<string, unknown>;
             if (response.ok) {
                 return createSuccessResponse(
                     `Successfully created ${sObject} record`,
@@ -152,7 +152,7 @@ const executeSalesforceRestApi = async (
             } else {
                 return createErrorResponse(
                     `Failed to create record: ${response.statusText}`,
-                    { errors: result, status: response.status }
+                    { errors: result, status: response.status },
                 );
             }
         } else if (method === "PATCH" || method === "DELETE") {
@@ -167,7 +167,7 @@ const executeSalesforceRestApi = async (
                 const action = method === "PATCH" ? "update" : "delete";
                 return createErrorResponse(
                     `Failed to ${action} record: ${response.statusText}`,
-                    { errors: result, status: response.status }
+                    { errors: result, status: response.status },
                 );
             }
         }
@@ -178,12 +178,12 @@ const executeSalesforceRestApi = async (
             method === "POST"
                 ? "create"
                 : method === "PATCH"
-                ? "update"
-                : "delete";
+                  ? "update"
+                  : "delete";
         return createErrorResponse(
             error instanceof Error
                 ? error.message
-                : `Failed to ${action} record`
+                : `Failed to ${action} record`,
         );
     }
 };
@@ -196,7 +196,7 @@ type OpenRecordResult = {
 
 const openRecordInBrowser = async (
     targetOrg: string,
-    recordId: string
+    recordId: string,
 ): Promise<OpenRecordResult> => {
     const orgInfo = await getOrgInfo(targetOrg);
     if (!orgInfo) {
@@ -237,21 +237,29 @@ const openRecordInBrowser = async (
 };
 
 export const registerOrgTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "open_record",
-        "Opens a Salesforce record in a browser.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                recordId: z
-                    .string()
-                    .describe("Id of the Salesforce record to open"),
-            }),
+            description: "Opens a Salesforce record in a browser.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    recordId: z
+                        .string()
+                        .describe("Id of the Salesforce record to open"),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -280,34 +288,43 @@ export const registerOrgTools = (server: McpServer) => {
                 return createErrorResponse(
                     error instanceof Error
                         ? error.message
-                        : "Failed to open record in browser"
+                        : "Failed to open record in browser",
                 );
             }
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "create_record",
-        "Create a new record in a Salesforce org using the REST API. Returns the ID of the created record on success.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                sObject: z
-                    .string()
-                    .describe(
-                        "API name of the Salesforce object to create a record for (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SOjbect."
-                    ),
-                recordJson: z
-                    .string()
-                    .describe(
-                        'JSON string containing the field values for the new record. Example: \'{"Name": "Acme Corp", "Type": "Customer"}\'. Execute the sobject_describe tool first to get the correct field API names and relationships.'
-                    ),
-            }),
+            description:
+                "Create a new record in a Salesforce org using the REST API. Returns the ID of the created record on success.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    sObject: z
+                        .string()
+                        .describe(
+                            "API name of the Salesforce object to create a record for (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SOjbect.",
+                        ),
+                    recordJson: z
+                        .string()
+                        .describe(
+                            'JSON string containing the field values for the new record. Example: \'{"Name": "Acme Corp", "Type": "Customer"}\'. Execute the sobject_describe tool first to get the correct field API names and relationships.',
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -328,38 +345,47 @@ export const registerOrgTools = (server: McpServer) => {
                 sObject,
                 "POST",
                 undefined,
-                recordData
+                recordData,
             );
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "update_record",
-        "Update an existing record in a Salesforce org using the REST API. Updates specified fields on the record.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                sObject: z
-                    .string()
-                    .describe(
-                        "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject."
-                    ),
-                recordId: z
-                    .string()
-                    .describe(
-                        "Salesforce record ID to update (15 or 18 character ID)"
-                    ),
-                recordJson: z
-                    .string()
-                    .describe(
-                        'JSON string containing the field values to update. Example: \'{"BillingCity": "San Francisco", "Phone": "(555) 123-4567"}\'. Execute the sobject_describe tool first to get the correct field API names. Only include fields you want to update.'
-                    ),
-            }),
+            description:
+                "Update an existing record in a Salesforce org using the REST API. Updates specified fields on the record.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    sObject: z
+                        .string()
+                        .describe(
+                            "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject.",
+                        ),
+                    recordId: z
+                        .string()
+                        .describe(
+                            "Salesforce record ID to update (15 or 18 character ID)",
+                        ),
+                    recordJson: z
+                        .string()
+                        .describe(
+                            'JSON string containing the field values to update. Example: \'{"BillingCity": "San Francisco", "Phone": "(555) 123-4567"}\'. Execute the sobject_describe tool first to get the correct field API names. Only include fields you want to update.',
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -380,33 +406,42 @@ export const registerOrgTools = (server: McpServer) => {
                 sObject,
                 "PATCH",
                 recordId,
-                recordData
+                recordData,
             );
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "delete_record",
-        "Delete a record from a Salesforce org using the REST API. Permanently removes the specified record.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                sObject: z
-                    .string()
-                    .describe(
-                        "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject."
-                    ),
-                recordId: z
-                    .string()
-                    .describe(
-                        "Salesforce record ID to delete (15 or 18 character ID)"
-                    ),
-            }),
+            description:
+                "Delete a record from a Salesforce org using the REST API. Permanently removes the specified record.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    sObject: z
+                        .string()
+                        .describe(
+                            "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject.",
+                        ),
+                    recordId: z
+                        .string()
+                        .describe(
+                            "Salesforce record ID to delete (15 or 18 character ID)",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -418,12 +453,17 @@ export const registerOrgTools = (server: McpServer) => {
 
             const { sObject, recordId } = input;
 
+            const { confirmed, message } = await requestConfirmation(
+                `Delete ${sObject} record ${recordId} from org '${targetOrg}'?`,
+            );
+            if (!confirmed) return createErrorResponse(message!);
+
             return executeSalesforceRestApi(
                 targetOrg,
                 sObject,
                 "DELETE",
-                recordId
+                recordId,
             );
-        }
+        },
     );
 };

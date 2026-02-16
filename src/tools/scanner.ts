@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
+import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const runScanner = async (
     target?: string[],
@@ -16,7 +17,7 @@ const runScanner = async (
     normalizeSeverity?: boolean,
     projectDir?: string[],
     verbose?: boolean,
-    verboseViolations?: boolean
+    verboseViolations?: boolean,
 ) => {
     let command = "sf scanner run";
 
@@ -90,7 +91,7 @@ const runScannerDfa = async (
     ruleThreadTimeout?: number,
     ruleDisableWarningViolation?: boolean,
     sfgeJvmArgs?: string,
-    pathExpLimit?: number
+    pathExpLimit?: number,
 ) => {
     let command = "sf scanner run dfa";
 
@@ -155,96 +156,112 @@ const runScannerDfa = async (
 };
 
 export const registerScannerTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "scanner_run",
-        "Scan codebase with security and quality rules. Defaults to all rules if none specified.",
         {
-            input: z.object({
-                target: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Source location. Supports glob patterns. Default: '.'"
-                    ),
-                category: z
-                    .array(z.string())
-                    .optional()
-                    .describe("Rule categories to run."),
-                engine: z
-                    .array(
-                        z.enum([
-                            "eslint",
-                            "eslint-lwc",
-                            "eslint-typescript",
-                            "pmd",
-                            "pmd-appexchange",
-                            "retire-js",
-                            "sfge",
-                            "cpd",
+            description:
+                "Scan codebase with security and quality rules. Defaults to all rules if none specified.",
+            inputSchema: {
+                input: z.object({
+                    target: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Source location. Supports glob patterns. Default: '.'",
+                        ),
+                    category: z
+                        .array(z.string())
+                        .optional()
+                        .describe("Rule categories to run."),
+                    engine: z
+                        .array(
+                            z.enum([
+                                "eslint",
+                                "eslint-lwc",
+                                "eslint-typescript",
+                                "pmd",
+                                "pmd-appexchange",
+                                "retire-js",
+                                "sfge",
+                                "cpd",
+                            ]),
+                        )
+                        .optional()
+                        .describe("Engines to run."),
+                    eslintConfig: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "ESLint config file. Cannot use with tsConfig.",
+                        ),
+                    pmdConfig: z
+                        .string()
+                        .optional()
+                        .describe("PMD rule XML file."),
+                    tsConfig: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "TypeScript config file. Cannot use with eslintConfig.",
+                        ),
+                    format: z
+                        .enum([
+                            "csv",
+                            "html",
+                            "json",
+                            "junit",
+                            "sarif",
+                            "table",
+                            "xml",
                         ])
-                    )
-                    .optional()
-                    .describe("Engines to run."),
-                eslintConfig: z
-                    .string()
-                    .optional()
-                    .describe("ESLint config file. Cannot use with tsConfig."),
-                pmdConfig: z.string().optional().describe("PMD rule XML file."),
-                tsConfig: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "TypeScript config file. Cannot use with eslintConfig."
-                    ),
-                format: z
-                    .enum([
-                        "csv",
-                        "html",
-                        "json",
-                        "junit",
-                        "sarif",
-                        "table",
-                        "xml",
-                    ])
-                    .optional()
-                    .describe("Output format. Default: table"),
-                outfile: z
-                    .string()
-                    .optional()
-                    .describe("File to write output to."),
-                severityThreshold: z
-                    .number()
-                    .min(1)
-                    .max(3)
-                    .optional()
-                    .describe(
-                        "Error on violations at/above this level: 1=high, 2=moderate, 3=low. Auto-enables normalize-severity."
-                    ),
-                normalizeSeverity: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Include normalized severity (1=high, 2=moderate, 3=low). HTML format shows normalized only."
-                    ),
-                projectDir: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Root project directories for Graph Engine context. Must be paths, not globs."
-                    ),
-                verbose: z
-                    .boolean()
-                    .optional()
-                    .describe("Enable verbose output."),
-                verboseViolations: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Include Retire-js vulnerability details (CVE, URLs)."
-                    ),
-            }),
+                        .optional()
+                        .describe("Output format. Default: table"),
+                    outfile: z
+                        .string()
+                        .optional()
+                        .describe("File to write output to."),
+                    severityThreshold: z
+                        .number()
+                        .min(1)
+                        .max(3)
+                        .optional()
+                        .describe(
+                            "Error on violations at/above this level: 1=high, 2=moderate, 3=low. Auto-enables normalize-severity.",
+                        ),
+                    normalizeSeverity: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Include normalized severity (1=high, 2=moderate, 3=low). HTML format shows normalized only.",
+                        ),
+                    projectDir: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Root project directories for Graph Engine context. Must be paths, not globs.",
+                        ),
+                    verbose: z
+                        .boolean()
+                        .optional()
+                        .describe("Enable verbose output."),
+                    verboseViolations: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Include Retire-js vulnerability details (CVE, URLs).",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 2);
+
             const {
                 target,
                 category,
@@ -261,6 +278,7 @@ export const registerScannerTools = (server: McpServer) => {
                 verboseViolations,
             } = input;
 
+            reportProgress("Validating permissions...");
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -277,6 +295,7 @@ export const registerScannerTools = (server: McpServer) => {
             }
 
             try {
+                reportProgress("Running scan...");
                 const result = await runScanner(
                     target,
                     category,
@@ -290,7 +309,7 @@ export const registerScannerTools = (server: McpServer) => {
                     normalizeSeverity,
                     projectDir,
                     verbose,
-                    verboseViolations
+                    verboseViolations,
                 );
 
                 return {
@@ -316,101 +335,112 @@ export const registerScannerTools = (server: McpServer) => {
                     ],
                 };
             }
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "scanner_run_dfa",
-        "Run Graph Engine for Apex data flow analysis. Detects complex security issues like SOQL/SQL injection.",
         {
-            input: z.object({
-                target: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Source location. Supports globs or methods with #-syntax. Default: '.'"
-                    ),
-                projectDir: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Root project directories for Graph Engine context. Must be paths, not globs."
-                    ),
-                category: z
-                    .array(z.string())
-                    .optional()
-                    .describe("Rule categories to run."),
-                format: z
-                    .enum([
-                        "csv",
-                        "html",
-                        "json",
-                        "junit",
-                        "sarif",
-                        "table",
-                        "xml",
-                    ])
-                    .optional()
-                    .describe("Output format for console."),
-                outfile: z
-                    .string()
-                    .optional()
-                    .describe("File to write output to."),
-                severityThreshold: z
-                    .number()
-                    .min(1)
-                    .max(3)
-                    .optional()
-                    .describe(
-                        "Error on violations at/above this level: 1=high, 2=moderate, 3=low. Auto-enables normalize-severity."
-                    ),
-                normalizeSeverity: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Include normalized severity (1=high, 2=moderate, 3=low). HTML format shows normalized only."
-                    ),
-                withPilot: z
-                    .boolean()
-                    .optional()
-                    .describe("Enable pilot rules."),
-                verbose: z
-                    .boolean()
-                    .optional()
-                    .describe("Enable verbose output."),
-                ruleThreadCount: z
-                    .number()
-                    .optional()
-                    .describe(
-                        "Concurrent DFA evaluation threads. Inherits SFGE_RULE_THREAD_COUNT if set."
-                    ),
-                ruleThreadTimeout: z
-                    .number()
-                    .optional()
-                    .describe(
-                        "Entry point evaluation timeout (ms). Inherits SFGE_RULE_THREAD_TIMEOUT if set."
-                    ),
-                ruleDisableWarningViolation: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Disable warnings (e.g., StripInaccessible READ). Inherits SFGE_RULE_DISABLE_WARNING_VIOLATION if set."
-                    ),
-                sfgeJvmArgs: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "JVM arguments for Graph Engine. Space-separated."
-                    ),
-                pathExpLimit: z
-                    .number()
-                    .optional()
-                    .describe(
-                        "Path expansion limit. Use -1 for unlimited. Inherits SFGE_PATH_EXPANSION_LIMIT if set."
-                    ),
-            }),
+            description:
+                "Run Graph Engine for Apex data flow analysis. Detects complex security issues like SOQL/SQL injection.",
+            inputSchema: {
+                input: z.object({
+                    target: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Source location. Supports globs or methods with #-syntax. Default: '.'",
+                        ),
+                    projectDir: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Root project directories for Graph Engine context. Must be paths, not globs.",
+                        ),
+                    category: z
+                        .array(z.string())
+                        .optional()
+                        .describe("Rule categories to run."),
+                    format: z
+                        .enum([
+                            "csv",
+                            "html",
+                            "json",
+                            "junit",
+                            "sarif",
+                            "table",
+                            "xml",
+                        ])
+                        .optional()
+                        .describe("Output format for console."),
+                    outfile: z
+                        .string()
+                        .optional()
+                        .describe("File to write output to."),
+                    severityThreshold: z
+                        .number()
+                        .min(1)
+                        .max(3)
+                        .optional()
+                        .describe(
+                            "Error on violations at/above this level: 1=high, 2=moderate, 3=low. Auto-enables normalize-severity.",
+                        ),
+                    normalizeSeverity: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Include normalized severity (1=high, 2=moderate, 3=low). HTML format shows normalized only.",
+                        ),
+                    withPilot: z
+                        .boolean()
+                        .optional()
+                        .describe("Enable pilot rules."),
+                    verbose: z
+                        .boolean()
+                        .optional()
+                        .describe("Enable verbose output."),
+                    ruleThreadCount: z
+                        .number()
+                        .optional()
+                        .describe(
+                            "Concurrent DFA evaluation threads. Inherits SFGE_RULE_THREAD_COUNT if set.",
+                        ),
+                    ruleThreadTimeout: z
+                        .number()
+                        .optional()
+                        .describe(
+                            "Entry point evaluation timeout (ms). Inherits SFGE_RULE_THREAD_TIMEOUT if set.",
+                        ),
+                    ruleDisableWarningViolation: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Disable warnings (e.g., StripInaccessible READ). Inherits SFGE_RULE_DISABLE_WARNING_VIOLATION if set.",
+                        ),
+                    sfgeJvmArgs: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "JVM arguments for Graph Engine. Space-separated.",
+                        ),
+                    pathExpLimit: z
+                        .number()
+                        .optional()
+                        .describe(
+                            "Path expansion limit. Use -1 for unlimited. Inherits SFGE_PATH_EXPANSION_LIMIT if set.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 2);
+
             const {
                 target,
                 projectDir,
@@ -428,6 +458,7 @@ export const registerScannerTools = (server: McpServer) => {
                 pathExpLimit,
             } = input;
 
+            reportProgress("Validating permissions...");
             if (permissions.isReadOnly()) {
                 return {
                     content: [
@@ -444,6 +475,7 @@ export const registerScannerTools = (server: McpServer) => {
             }
 
             try {
+                reportProgress("Running data flow analysis...");
                 const result = await runScannerDfa(
                     target,
                     projectDir,
@@ -458,7 +490,7 @@ export const registerScannerTools = (server: McpServer) => {
                     ruleThreadTimeout,
                     ruleDisableWarningViolation,
                     sfgeJvmArgs,
-                    pathExpLimit
+                    pathExpLimit,
                 );
 
                 return {
@@ -485,6 +517,6 @@ export const registerScannerTools = (server: McpServer) => {
                     ],
                 };
             }
-        }
+        },
     );
 };

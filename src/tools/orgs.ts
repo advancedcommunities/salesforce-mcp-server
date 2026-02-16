@@ -7,6 +7,7 @@ import {
     getDefaultOrg,
     clearDefaultOrgCache,
 } from "../utils/resolveTargetOrg.js";
+import { requestConfirmation } from "../utils/elicitation.js";
 import z from "zod";
 
 /**
@@ -251,10 +252,35 @@ const openOrg = async (
 };
 
 export const registerOrgTools = (server: McpServer) => {
-    server.tool(
+    const orgInfoSchema = z.object({
+        username: z.string(),
+        aliases: z.array(z.string()).nullable().optional(),
+        orgId: z.string().optional(),
+        instanceUrl: z.string().optional(),
+        isDevHub: z.boolean().optional(),
+        apiVersion: z.string().optional(),
+    });
+
+    server.registerTool(
         "list_connected_salesforce_orgs",
-        "List connected Salesforce Orgs. This command retrieves a list of all Salesforce Orgs that are currently connected to the Salesforce CLI. The results are returned in JSON format, providing details about each Org, including its alias, username, and other metadata. Use this command to see which Salesforce Orgs you have access to and can interact with using the Salesforce CLI.",
-        {},
+        {
+            description:
+                "List connected Salesforce Orgs. This command retrieves a list of all Salesforce Orgs that are currently connected to the Salesforce CLI. The results are returned in JSON format, providing details about each Org, including its alias, username, and other metadata. Use this command to see which Salesforce Orgs you have access to and can interact with using the Salesforce CLI.",
+            outputSchema: {
+                devHubOrgs: z.array(orgInfoSchema),
+                production: z.array(orgInfoSchema),
+                sandboxes: z.array(orgInfoSchema),
+                scratchOrgs: z.array(orgInfoSchema),
+                totalOrgs: z.number(),
+                permissionMessage: z.string().optional(),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
+        },
         async () => {
             const orgList = await listConnectedSalesforceOrgs();
             return {
@@ -264,22 +290,32 @@ export const registerOrgTools = (server: McpServer) => {
                         text: JSON.stringify(orgList),
                     },
                 ],
+                structuredContent: orgList.result,
             };
         },
     );
 
-    server.tool(
+    server.registerTool(
         "login_into_org",
-        "Authenticate and login to a Salesforce org via web browser. This command opens a browser window for OAuth authentication flow, allowing you to securely connect to a Salesforce org. After successful authentication, the org credentials are stored locally by the Salesforce CLI for future use. Use isProduction=true for production/developer orgs (login.salesforce.com) or isProduction=false for sandboxes/scratch orgs (test.salesforce.com). The alias parameter creates a convenient shorthand name for accessing this org in subsequent commands. IMPORTANT: This tool requires both 'alias' and 'isProduction' parameters to be provided before execution - do not proceed until all required parameters are supplied.",
         {
-            input: z.object({
-                alias: z.string().describe("An alias of the org to login"),
-                isProduction: z
-                    .boolean()
-                    .describe(
-                        "Indicates whether the org will be logged in via https://login.salesforce.com or https://test.salesforce.com URL.",
-                    ),
-            }),
+            description:
+                "Authenticate and login to a Salesforce org via web browser. This command opens a browser window for OAuth authentication flow, allowing you to securely connect to a Salesforce org. After successful authentication, the org credentials are stored locally by the Salesforce CLI for future use. Use isProduction=true for production/developer orgs (login.salesforce.com) or isProduction=false for sandboxes/scratch orgs (test.salesforce.com). The alias parameter creates a convenient shorthand name for accessing this org in subsequent commands. IMPORTANT: This tool requires both 'alias' and 'isProduction' parameters to be provided before execution - do not proceed until all required parameters are supplied.",
+            inputSchema: {
+                input: z.object({
+                    alias: z.string().describe("An alias of the org to login"),
+                    isProduction: z
+                        .boolean()
+                        .describe(
+                            "Indicates whether the org will be logged in via https://login.salesforce.com or https://test.salesforce.com URL.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const { alias, isProduction } = input;
@@ -310,28 +346,37 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "assign_permission_set",
-        "Assign a permission set to one or more org users. To specify an alias for the --target-org or --on-behalf-of flags, use the CLI username alias, such as the one you set with the 'alias set' command. Don't use the value of the Alias field of the User Salesforce object for the org user. To assign multiple permission sets, specify multiple names in the permissionSetNames array. Enclose names that contain spaces in the array elements. The same syntax applies to onBehalfOf array for specifying multiple users.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                permissionSetNames: z
-                    .array(z.string())
-                    .min(1)
-                    .describe("Permission set names to assign"),
-                onBehalfOf: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Username or alias to assign the permission set to. If not specified, assigns to the original admin user.",
-                    ),
-            }),
+            description:
+                "Assign a permission set to one or more org users. To specify an alias for the --target-org or --on-behalf-of flags, use the CLI username alias, such as the one you set with the 'alias set' command. Don't use the value of the Alias field of the User Salesforce object for the org user. To assign multiple permission sets, specify multiple names in the permissionSetNames array. Enclose names that contain spaces in the array elements. The same syntax applies to onBehalfOf array for specifying multiple users.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    permissionSetNames: z
+                        .array(z.string())
+                        .min(1)
+                        .describe("Permission set names to assign"),
+                    onBehalfOf: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Username or alias to assign the permission set to. If not specified, assigns to the original admin user.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -413,28 +458,37 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "assign_permission_set_license",
-        "Assign a permission set license to one or more org users. To specify an alias for the --target-org or --on-behalf-of flags, use the CLI username alias, such as the one you set with the 'alias set' command. Don't use the value of the Alias field of the User Salesforce object for the org user. To assign multiple permission set licenses, specify multiple names in the licenseNames array. Enclose names that contain spaces in the array elements. The same syntax applies to onBehalfOf array for specifying multiple users.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                licenseNames: z
-                    .array(z.string())
-                    .min(1)
-                    .describe("Permission set license names to assign"),
-                onBehalfOf: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Username or alias to assign the permission set license to. If not specified, assigns to the original admin user.",
-                    ),
-            }),
+            description:
+                "Assign a permission set license to one or more org users. To specify an alias for the --target-org or --on-behalf-of flags, use the CLI username alias, such as the one you set with the 'alias set' command. Don't use the value of the Alias field of the User Salesforce object for the org user. To assign multiple permission set licenses, specify multiple names in the licenseNames array. Enclose names that contain spaces in the array elements. The same syntax applies to onBehalfOf array for specifying multiple users.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    licenseNames: z
+                        .array(z.string())
+                        .min(1)
+                        .describe("Permission set license names to assign"),
+                    onBehalfOf: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Username or alias to assign the permission set license to. If not specified, assigns to the original admin user.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -516,18 +570,27 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "display_user",
-        "Display information about a Salesforce user. Output includes the profile name, org ID, access token, instance URL, login URL, and alias if applicable. The displayed alias is local and different from the Alias field of the User sObject record of the new user, which you set in the Setup UI.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-            }),
+            description:
+                "Display information about a Salesforce user. Output includes the profile name, org ID, access token, instance URL, login URL, and alias if applicable. The displayed alias is local and different from the Alias field of the User sObject record of the new user, which you set in the Setup UI.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -573,41 +636,50 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "list_metadata",
-        "List the metadata components and properties of a specified type. Use this command to identify individual components in your manifest file or if you want a high-level view of particular metadata types in your org. For example, you can use this command to return a list of names of all the CustomObject or Layout components in your org, then use this information in a retrieve command that returns a subset of these components. The username that you use to connect to the org must have the Modify All Data or Modify Metadata Through Metadata API Functions permission.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                metadataType: z
-                    .string()
-                    .describe(
-                        "Metadata type to be retrieved, such as CustomObject; metadata type names are case-sensitive.",
-                    ),
-                folder: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Folder associated with the component; required for components that use folders; folder names are case-sensitive. Examples of metadata types that use folders are Dashboard, Document, EmailTemplate, and Report.",
-                    ),
-                apiVersion: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "API version to use; default is the most recent API version.",
-                    ),
-                outputFile: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Pathname of the file in which to write the results.",
-                    ),
-            }),
+            description:
+                "List the metadata components and properties of a specified type. Use this command to identify individual components in your manifest file or if you want a high-level view of particular metadata types in your org. For example, you can use this command to return a list of names of all the CustomObject or Layout components in your org, then use this information in a retrieve command that returns a subset of these components. The username that you use to connect to the org must have the Modify All Data or Modify Metadata Through Metadata API Functions permission.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    metadataType: z
+                        .string()
+                        .describe(
+                            "Metadata type to be retrieved, such as CustomObject; metadata type names are case-sensitive.",
+                        ),
+                    folder: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Folder associated with the component; required for components that use folders; folder names are case-sensitive. Examples of metadata types that use folders are Dashboard, Document, EmailTemplate, and Report.",
+                        ),
+                    apiVersion: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "API version to use; default is the most recent API version.",
+                        ),
+                    outputFile: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Pathname of the file in which to write the results.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -675,30 +747,39 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "list_metadata_types",
-        "Display details about the metadata types that are enabled for your org. The information includes Apex classes and triggers, custom objects, custom fields on standard objects, tab sets that define an app, and many other metadata types. Use this information to identify the syntax needed for a <name> element in a manifest file (package.xml). The username that you use to connect to the org must have the Modify All Data or Modify Metadata Through Metadata API Functions permission.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                apiVersion: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "API version to use; default is the most recent API version.",
-                    ),
-                outputFile: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Pathname of the file in which to write the results. Directing the output to a file makes it easier to extract relevant information for your package.xml manifest file.",
-                    ),
-            }),
+            description:
+                "Display details about the metadata types that are enabled for your org. The information includes Apex classes and triggers, custom objects, custom fields on standard objects, tab sets that define an app, and many other metadata types. Use this information to identify the syntax needed for a <name> element in a manifest file (package.xml). The username that you use to connect to the org must have the Modify All Data or Modify Metadata Through Metadata API Functions permission.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    apiVersion: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "API version to use; default is the most recent API version.",
+                        ),
+                    outputFile: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Pathname of the file in which to write the results. Directing the output to a file makes it easier to extract relevant information for your package.xml manifest file.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -750,24 +831,33 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "logout",
-        "Log out of a Salesforce org. Use targetOrg to logout of a specific org, or set all to true to logout of all orgs. The logout is performed with --no-prompt flag to avoid confirmation prompts. Be careful! If you log out of a scratch org without having access to its password, you can't access the scratch org again, either through the CLI or the Salesforce UI.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org to logout from. If not specified and 'all' is false, the command will fail.",
-                    ),
-                all: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Logout from all authenticated orgs including Dev Hubs, sandboxes, DE orgs, and expired, deleted, and unknown-status scratch orgs.",
-                    ),
-            }),
+            description:
+                "Log out of a Salesforce org. Use targetOrg to logout of a specific org, or set all to true to logout of all orgs. The logout is performed with --no-prompt flag to avoid confirmation prompts. Be careful! If you log out of a scratch org without having access to its password, you can't access the scratch org again, either through the CLI or the Salesforce UI.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org to logout from. If not specified and 'all' is false, the command will fail.",
+                        ),
+                    all: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Logout from all authenticated orgs including Dev Hubs, sandboxes, DE orgs, and expired, deleted, and unknown-status scratch orgs.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const { targetOrg, all } = input;
@@ -846,6 +936,25 @@ export const registerOrgTools = (server: McpServer) => {
                 };
             }
 
+            const confirmMsg = all
+                ? "Log out of ALL authenticated Salesforce orgs?"
+                : `Log out of Salesforce org '${targetOrg}'?`;
+            const { confirmed, message: confirmMessage } =
+                await requestConfirmation(confirmMsg);
+            if (!confirmed) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: confirmMessage,
+                            }),
+                        },
+                    ],
+                };
+            }
+
             const result = await logoutFromOrg(targetOrg, all);
             return {
                 content: [
@@ -858,40 +967,49 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "open",
-        "Open your Salesforce org in a browser. To open a specific page, specify the portion of the URL after 'https://mydomain.my.salesforce.com' as the path value. Use sourceFile to open ApexPage, FlexiPage, Flow, or Agent metadata from your local project in the associated Builder.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                path: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Navigation URL path to open a specific page (e.g., 'lightning' for Lightning Experience, '/apex/YourPage' for Visualforce).",
-                    ),
-                browser: z
-                    .enum(["chrome", "edge", "firefox"])
-                    .optional()
-                    .describe("Browser where the org opens."),
-                privateMode: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Open the org in the default browser using private (incognito) mode.",
-                    ),
-                sourceFile: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Path to ApexPage, FlexiPage, Flow, or Agent metadata to open in the associated Builder.",
-                    ),
-            }),
+            description:
+                "Open your Salesforce org in a browser. To open a specific page, specify the portion of the URL after 'https://mydomain.my.salesforce.com' as the path value. Use sourceFile to open ApexPage, FlexiPage, Flow, or Agent metadata from your local project in the associated Builder.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    path: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Navigation URL path to open a specific page (e.g., 'lightning' for Lightning Experience, '/apex/YourPage' for Visualforce).",
+                        ),
+                    browser: z
+                        .enum(["chrome", "edge", "firefox"])
+                        .optional()
+                        .describe("Browser where the org opens."),
+                    privateMode: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Open the org in the default browser using private (incognito) mode.",
+                        ),
+                    sourceFile: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Path to ApexPage, FlexiPage, Flow, or Agent metadata to open in the associated Builder.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -945,10 +1063,18 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "get_default_org",
-        "Get the current default target org configured in the Salesforce CLI. This returns the org alias or username that is used as the default when no targetOrg is specified in other tool calls.",
-        {},
+        {
+            description:
+                "Get the current default target org configured in the Salesforce CLI. This returns the org alias or username that is used as the default when no targetOrg is specified in other tool calls.",
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
+        },
         async () => {
             try {
                 const result = await executeSfCommand(
@@ -987,17 +1113,26 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "set_default_org",
-        "Set the default target org for the Salesforce CLI. Once set, all tools will use this org by default when no targetOrg is specified. The value persists across sessions.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .describe(
-                        "Username or alias of the org to set as the default target org.",
-                    ),
-            }),
+            description:
+                "Set the default target org for the Salesforce CLI. Once set, all tools will use this org by default when no targetOrg is specified. The value persists across sessions.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .describe(
+                            "Username or alias of the org to set as the default target org.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const { targetOrg } = input;
@@ -1068,10 +1203,18 @@ export const registerOrgTools = (server: McpServer) => {
         },
     );
 
-    server.tool(
+    server.registerTool(
         "clear_default_org",
-        "Clear the default target org from the Salesforce CLI configuration. After clearing, all tools will require an explicit targetOrg parameter until a new default is set.",
-        {},
+        {
+            description:
+                "Clear the default target org from the Salesforce CLI configuration. After clearing, all tools will require an explicit targetOrg parameter until a new default is set.",
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
+        },
         async () => {
             if (permissions.isReadOnly()) {
                 return {

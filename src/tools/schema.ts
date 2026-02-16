@@ -10,7 +10,7 @@ const schemaGenerateTabInputSchema = z.object({
     directory: z
         .string()
         .describe(
-            "Path to a 'tabs' directory that will contain the source files"
+            "Path to a 'tabs' directory that will contain the source files",
         ),
     icon: z
         .number()
@@ -18,12 +18,12 @@ const schemaGenerateTabInputSchema = z.object({
         .max(100)
         .default(1)
         .describe(
-            "Number from 1 to 100 that specifies the color scheme and icon for the custom tab"
+            "Number from 1 to 100 that specifies the color scheme and icon for the custom tab",
         ),
 });
 
 const schemaGenerateTab = async (
-    input: z.infer<typeof schemaGenerateTabInputSchema>
+    input: z.infer<typeof schemaGenerateTabInputSchema>,
 ) => {
     const { object, directory, icon } = input;
 
@@ -46,11 +46,20 @@ const schemaGenerateTab = async (
 };
 
 export const registerSchemaTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "schema_generate_tab",
-        "Generate metadata source files for a new custom tab on a custom object. Custom tabs display custom object data in Salesforce navigation.",
         {
-            input: schemaGenerateTabInputSchema,
+            description:
+                "Generate metadata source files for a new custom tab on a custom object. Custom tabs display custom object data in Salesforce navigation.",
+            inputSchema: {
+                input: schemaGenerateTabInputSchema,
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const result = await schemaGenerateTab(input);
@@ -62,6 +71,6 @@ export const registerSchemaTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 };

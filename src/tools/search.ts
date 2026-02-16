@@ -46,45 +46,56 @@ const executeSoslQuery = async (
 };
 
 export const registerSearchTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "search_records",
-        "Search for text across multiple Salesforce objects simultaneously. USE THIS TOOL when searching for records that mention, contain, or reference specific text (like company names, keywords, phrases) across different objects. This is the PRIMARY tool for text-based searches across your org - it's much more efficient than running multiple SOQL queries. Perfect for finding all records mentioning a competitor, customer name, or any text across Accounts, Opportunities, Cases, Contacts, etc. SOSL (Salesforce Object Search Language) performs full-text search across all searchable fields.",
         {
-            input: z
-                .object({
-                    targetOrg: z
-                        .string()
-                        .optional()
-                        .describe(
-                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                        ),
-                    query: z
-                        .string()
-                        .optional()
-                        .describe(
-                            'SOSL query to execute (e.g., "FIND {Anna Jones} IN Name Fields RETURNING Contact (Name, Phone)")',
-                        ),
-                    file: z
-                        .string()
-                        .optional()
-                        .describe("Path to file that contains the SOSL query"),
-                    resultFormat: z
-                        .enum(["human", "csv", "json"])
-                        .optional()
-                        .default("json")
-                        .describe(
-                            "Format to display the results. 'csv' writes to disk, 'human' and 'json' display to terminal",
-                        ),
-                })
-                .refine(
-                    (data) =>
-                        !!(data.query || data.file) &&
-                        !(data.query && data.file),
-                    {
-                        message:
-                            "Provide either 'query' or 'file', but not both",
-                    },
-                ),
+            description:
+                "Search for text across multiple Salesforce objects simultaneously. USE THIS TOOL when searching for records that mention, contain, or reference specific text (like company names, keywords, phrases) across different objects. This is the PRIMARY tool for text-based searches across your org - it's much more efficient than running multiple SOQL queries. Perfect for finding all records mentioning a competitor, customer name, or any text across Accounts, Opportunities, Cases, Contacts, etc. SOSL (Salesforce Object Search Language) performs full-text search across all searchable fields.",
+            inputSchema: {
+                input: z
+                    .object({
+                        targetOrg: z
+                            .string()
+                            .optional()
+                            .describe(
+                                "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                            ),
+                        query: z
+                            .string()
+                            .optional()
+                            .describe(
+                                'SOSL query to execute (e.g., "FIND {Anna Jones} IN Name Fields RETURNING Contact (Name, Phone)")',
+                            ),
+                        file: z
+                            .string()
+                            .optional()
+                            .describe(
+                                "Path to file that contains the SOSL query",
+                            ),
+                        resultFormat: z
+                            .enum(["human", "csv", "json"])
+                            .optional()
+                            .default("json")
+                            .describe(
+                                "Format to display the results. 'csv' writes to disk, 'human' and 'json' display to terminal",
+                            ),
+                    })
+                    .refine(
+                        (data) =>
+                            !!(data.query || data.file) &&
+                            !(data.query && data.file),
+                        {
+                            message:
+                                "Provide either 'query' or 'file', but not both",
+                        },
+                    ),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;

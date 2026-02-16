@@ -1,4 +1,5 @@
 import { AuthInfo, Connection } from "@salesforce/core";
+import { logger } from "../utils/logger.js";
 
 /**
  * Authorization information for a Salesforce org
@@ -24,13 +25,13 @@ export async function getConnection(targetOrg: string): Promise<Connection> {
         const foundOrg = allAuthorizations.find(
             (auth) =>
                 auth.username === targetOrg ||
-                (auth.aliases && auth.aliases.includes(targetOrg))
+                (auth.aliases && auth.aliases.includes(targetOrg)),
         );
 
         if (!foundOrg) {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' or 'sf org create' first.`
+                    `Please run 'sf org login' or 'sf org create' first.`,
             );
         }
 
@@ -39,10 +40,18 @@ export async function getConnection(targetOrg: string): Promise<Connection> {
         return connection;
     } catch (error: any) {
         if (error.name === "NoAuthInfoFound") {
+            logger.critical(
+                "salesforce",
+                `No auth info found for org '${targetOrg}'`,
+            );
             throw new Error(
-                'No authenticated orgs found. Please run "sf org login" to authenticate.'
+                'No authenticated orgs found. Please run "sf org login" to authenticate.',
             );
         }
+        logger.error(
+            "salesforce",
+            `Failed to connect to org '${targetOrg}': ${error.message}`,
+        );
         throw error;
     }
 }
@@ -80,10 +89,14 @@ export async function listAllOrgs(): Promise<OrgAuthorization[]> {
                         isDevHub: auth.isDevHub,
                     };
                 }
-            })
+            }),
         );
     } catch (error: any) {
         if (error.name === "NoAuthInfoFound") {
+            logger.critical(
+                "salesforce",
+                "No auth info found when listing orgs",
+            );
             return [];
         }
         throw error;
@@ -101,7 +114,7 @@ export async function isOrgAuthenticated(targetOrg: string): Promise<boolean> {
         return allOrgs.some(
             (org) =>
                 org.username === targetOrg ||
-                (org.aliases && org.aliases.includes(targetOrg))
+                (org.aliases && org.aliases.includes(targetOrg)),
         );
     } catch {
         return false;
@@ -114,7 +127,7 @@ export async function isOrgAuthenticated(targetOrg: string): Promise<boolean> {
  * @returns Org authorization information or null if not found
  */
 export async function getOrgInfo(
-    targetOrg: string
+    targetOrg: string,
 ): Promise<OrgAuthorization | null> {
     try {
         const allOrgs = await listAllOrgs();
@@ -122,7 +135,7 @@ export async function getOrgInfo(
             allOrgs.find(
                 (org) =>
                     org.username === targetOrg ||
-                    (org.aliases && org.aliases.includes(targetOrg))
+                    (org.aliases && org.aliases.includes(targetOrg)),
             ) || null
         );
     } catch {
@@ -143,13 +156,13 @@ export async function getOrgAccessToken(targetOrg: string): Promise<string> {
         const foundOrg = allAuthorizations.find(
             (auth) =>
                 auth.username === targetOrg ||
-                (auth.aliases && auth.aliases.includes(targetOrg))
+                (auth.aliases && auth.aliases.includes(targetOrg)),
         );
 
         if (!foundOrg) {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' or 'sf org create' first.`
+                    `Please run 'sf org login' or 'sf org create' first.`,
             );
         }
 
@@ -160,7 +173,7 @@ export async function getOrgAccessToken(targetOrg: string): Promise<string> {
     } catch (error: any) {
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
-                'No authenticated orgs found. Please run "sf org login" to authenticate.'
+                'No authenticated orgs found. Please run "sf org login" to authenticate.',
             );
         }
         throw error;

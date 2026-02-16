@@ -33,35 +33,44 @@ const generateComponent = async (
 };
 
 export const registerLightningTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "generate_component",
-        "Generate Lightning Web Components (LWC) or Aura components with customizable templates and output directories",
         {
-            input: z.object({
-                name: z
-                    .string()
-                    .describe(
-                        "Name of the generated Lightning Component. The name can be up to 40 characters and must start with a letter.",
-                    ),
-                template: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Template to use for file creation. Supplied parameter values or default values are filled into a copy of the template. Permissible values are: default, analyticsDashboard, analyticsDashboardWithStep. Default value: default",
-                    ),
-                outputDirectory: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory. Default value: .",
-                    ),
-                type: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Type of the component bundle. Permissible values are: aura, lwc (lightning web component). Default value: aura",
-                    ),
-            }),
+            description:
+                "Generate Lightning Web Components (LWC) or Aura components with customizable templates and output directories",
+            inputSchema: {
+                input: z.object({
+                    name: z
+                        .string()
+                        .describe(
+                            "Name of the generated Lightning Component. The name can be up to 40 characters and must start with a letter.",
+                        ),
+                    template: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Template to use for file creation. Supplied parameter values or default values are filled into a copy of the template. Permissible values are: default, analyticsDashboard, analyticsDashboardWithStep. Default value: default",
+                        ),
+                    outputDirectory: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory. Default value: .",
+                        ),
+                    type: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Type of the component bundle. Permissible values are: aura, lwc (lightning web component). Default value: aura",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const { name, template, outputDirectory, type } = input;

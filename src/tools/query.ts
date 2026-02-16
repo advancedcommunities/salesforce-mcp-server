@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const executeSoqlQuery = async (
     targetOrg: string,
@@ -55,43 +56,56 @@ const executeSoqlQueryToFile = async (
 };
 
 export const registerQueryTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "query_records",
-        "Query records from a SINGLE Salesforce object using structured field conditions. Use this for precise queries on ONE object with specific field criteria (e.g., Status = 'Open', Amount > 1000). NOT for text searches across multiple objects - use search_records for that. This executes SOQL queries with SELECT, WHERE, ORDER BY, and LIMIT clauses on a single SObject. The results are returned in JSON format. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce Org to execute the query against. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                sObject: z
-                    .string()
-                    .describe("Salesforce SObject to query from"),
-                selectClause: z
-                    .string()
-                    .describe(
-                        "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases",
-                    ),
-                where: z
-                    .string()
-                    .optional()
-                    .describe("Optional WHERE clause for the query"),
+            description:
+                "Query records from a SINGLE Salesforce object using structured field conditions. Use this for precise queries on ONE object with specific field criteria (e.g., Status = 'Open', Amount > 1000). NOT for text searches across multiple objects - use search_records for that. This executes SOQL queries with SELECT, WHERE, ORDER BY, and LIMIT clauses on a single SObject. The results are returned in JSON format. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce Org to execute the query against. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    sObject: z
+                        .string()
+                        .describe("Salesforce SObject to query from"),
+                    selectClause: z
+                        .string()
+                        .describe(
+                            "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases",
+                        ),
+                    where: z
+                        .string()
+                        .optional()
+                        .describe("Optional WHERE clause for the query"),
 
-                limit: z
-                    .number()
-                    .optional()
-                    .describe(
-                        "Optional limit for the number of records returned",
-                    ),
-                orderBy: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')",
-                    ),
-            }),
+                    limit: z
+                        .number()
+                        .optional()
+                        .describe(
+                            "Optional limit for the number of records returned",
+                        ),
+                    orderBy: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')",
+                        ),
+                }),
+            },
+            outputSchema: {
+                targetOrg: z.string(),
+                records: z.array(z.record(z.string(), z.unknown())),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -108,6 +122,7 @@ export const registerQueryTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -125,6 +140,7 @@ export const registerQueryTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -137,60 +153,76 @@ export const registerQueryTools = (server: McpServer) => {
                 orderBy,
             );
 
+            const structuredContent = { targetOrg, records: result };
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, records: result }),
+                        text: JSON.stringify(structuredContent),
                     },
                 ],
+                structuredContent,
             };
         },
     );
 
-    server.tool(
+    server.registerTool(
         "query_records_to_file",
-        "Query records from a Salesforce SObject and save to a file. This command allows you to execute a SOQL query against a specified Salesforce SObject in a given Org and save the results to a file. You can specify the SELECT clause (fields, functions like COUNT(), aggregations, etc.), an optional WHERE clause, and save the results in various formats. The results can be saved in CSV format by default, or in other formats if specified. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce Org to execute the query against. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                sObject: z
-                    .string()
-                    .describe("Salesforce SObject to query from"),
-                selectClause: z
-                    .string()
-                    .describe(
-                        "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases",
-                    ),
-                where: z
-                    .string()
-                    .optional()
-                    .describe("Optional WHERE clause for the query"),
-                outputFileName: z
-                    .string()
-                    .optional()
-                    .describe("Optional output file name to save the results"),
-                outputFileFormat: z
-                    .enum(["csv", "json"])
-                    .optional()
-                    .default("csv")
-                    .describe(
-                        "Optional output file format to save the results, default is csv",
-                    ),
-                orderBy: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')",
-                    ),
-            }),
+            description:
+                "Query records from a Salesforce SObject and save to a file. This command allows you to execute a SOQL query against a specified Salesforce SObject in a given Org and save the results to a file. You can specify the SELECT clause (fields, functions like COUNT(), aggregations, etc.), an optional WHERE clause, and save the results in various formats. The results can be saved in CSV format by default, or in other formats if specified. IMPORTANT: Always execute the `sobject_list` tool first to understand which objects are available in the org, and optionally execute `sobject_describe` for the specific SObject to understand its fields and structure before querying.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce Org to execute the query against. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    sObject: z
+                        .string()
+                        .describe("Salesforce SObject to query from"),
+                    selectClause: z
+                        .string()
+                        .describe(
+                            "SELECT clause content - can include fields, functions (COUNT, SUM, AVG, etc.), expressions, and aliases",
+                        ),
+                    where: z
+                        .string()
+                        .optional()
+                        .describe("Optional WHERE clause for the query"),
+                    outputFileName: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Optional output file name to save the results",
+                        ),
+                    outputFileFormat: z
+                        .enum(["csv", "json"])
+                        .optional()
+                        .default("csv")
+                        .describe(
+                            "Optional output file format to save the results, default is csv",
+                        ),
+                    orderBy: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Optional ORDER BY clause for sorting results (e.g., 'Name ASC', 'CreatedDate DESC')",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
-        async ({ input }) => {
+        async ({ input }, extra: ToolExtra) => {
+            const reportProgress = createProgressReporter(extra, 3);
+
+            reportProgress("Resolving target org...");
             let targetOrg: string;
             try {
                 targetOrg = await resolveTargetOrg(input.targetOrg);
@@ -218,6 +250,7 @@ export const registerQueryTools = (server: McpServer) => {
             } = input;
 
             // Check org permissions
+            reportProgress("Validating permissions...");
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
                     content: [
@@ -232,6 +265,7 @@ export const registerQueryTools = (server: McpServer) => {
                 };
             }
 
+            reportProgress("Exporting records to file...");
             const result = await executeSoqlQueryToFile(
                 targetOrg,
                 sObject,

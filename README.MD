@@ -689,7 +689,7 @@ Deploy metadata components to a Salesforce org with various configuration option
 
 - "Deploy all metadata from force-app directory to my dev org"
 - "Validate deployment to production with all tests but don't save (dry run)"
-- "Deploy specific Apex classes matching 'Account*' pattern to sandbox"
+- "Deploy specific Apex classes matching 'Account\*' pattern to sandbox"
 - "Deploy using package.xml manifest with RunLocalTests"
 - "Deploy metadata and run specific test classes: TestClass1, TestClass2"
 
@@ -722,6 +722,34 @@ Clear the default target org from the Salesforce CLI configuration. After cleari
 - "Clear the default Salesforce org"
 - "Remove the default target org setting"
 - "Unset my default org"
+
+### Available Resources
+
+The server exposes MCP Resources that clients can browse and include in conversations for contextual data about your Salesforce orgs.
+
+| #   | Resource           | URI                                      | Description                                                                    |
+| --- | ------------------ | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| 1   | Server Permissions | `salesforce://permissions`               | Current server permission settings (read-only mode, allowed orgs, default org) |
+| 2   | Org Metadata       | `salesforce://org/{alias}/metadata`      | Org metadata summary with available metadata types                             |
+| 3   | Org Objects        | `salesforce://org/{alias}/objects`       | List of all standard and custom SObjects in the org                            |
+| 4   | Object Schema      | `salesforce://org/{alias}/object/{name}` | Detailed schema for a specific SObject (fields, relationships, record types)   |
+| 5   | Org Limits         | `salesforce://org/{alias}/limits`        | API limits and usage (daily API calls, storage, governor limits)               |
+
+Resources support autocomplete for org aliases and object names. Template resources (2-5) respect the `ALLOWED_ORGS` permission setting.
+
+### Available Prompts
+
+The server provides MCP Prompts — templated workflows that appear as slash commands in clients like Claude Desktop. They fetch live org data and guide the AI through common Salesforce tasks.
+
+| #   | Prompt             | Arguments                            | Description                                                           |
+| --- | ------------------ | ------------------------------------ | --------------------------------------------------------------------- |
+| 1   | `soql_builder`     | `objectName` (required), `targetOrg` | Describe an SObject and interactively build a SOQL query step by step |
+| 2   | `apex_review`      | `className` (required), `targetOrg`  | Fetch an Apex class from the org and perform a structured code review |
+| 3   | `org_health_check` | `targetOrg`                          | Fetch org info, API limits, and test coverage to assess org health    |
+| 4   | `deploy_checklist` | `targetOrg`                          | Generate a pre-deployment readiness checklist with live org data      |
+| 5   | `debug_apex`       | `targetOrg`, `logId`                 | Fetch and analyze an Apex debug log for errors and performance issues |
+
+All prompts respect the `ALLOWED_ORGS` permission setting and use the default org when `targetOrg` is not provided.
 
 ### Practical Examples
 
@@ -756,6 +784,82 @@ User: "I need to document our data model. Can you describe the Order__c object i
 
 AI: [Provides detailed object metadata]
 ```
+
+### Logging
+
+The server emits structured MCP log messages (`notifications/message`) with typed severity levels and named loggers. Clients that support the MCP logging capability will receive these messages automatically.
+
+**Logger names:** `salesforce`, `cli`, `permissions`
+
+**Log levels used:**
+
+- `debug` — CLI command execution details
+- `info` — Server startup and general status
+- `warning` — Permission denials
+- `error` — Command failures and connection errors
+- `critical` — Authentication/auth-info failures
+
+Clients can set a minimum log level via the `logging/setLevel` request to filter out lower-severity messages.
+
+### Progress Reporting
+
+Long-running tools report real-time progress via MCP progress notifications (`notifications/progress`). Clients that include a `progressToken` in `_meta` when calling a tool will receive progress updates with step messages.
+
+**Tools with progress reporting:**
+
+- `deploy_start` — Resolving target org → Validating permissions → Deploying metadata
+- `run_apex_tests` — Resolving target org → Validating permissions → Running Apex tests
+- `scanner_run` — Validating permissions → Running scan
+- `scanner_run_dfa` — Validating permissions → Running data flow analysis
+- `run_code_analyzer` — Validating permissions → Running code analysis
+- `query_records_to_file` — Resolving target org → Validating permissions → Exporting records to file
+
+Progress is reported as fire-and-forget notifications and will never interrupt tool execution. Clients that don't provide a progress token will not receive any notifications.
+
+### Elicitation (User Confirmation)
+
+Destructive operations request user confirmation via MCP elicitation before proceeding. When a client supports elicitation, the server will prompt the user with a confirmation dialog before executing the operation.
+
+**Tools that request confirmation:**
+
+- `delete_record` — Confirms before permanently deleting a Salesforce record
+- `package_uninstall` — Confirms before uninstalling a package from the org
+- `logout` — Confirms before logging out of a specific org or all orgs
+- `deploy_start` — Confirms before deploying metadata (skipped for dry-run/validation-only deployments)
+
+Elicitation degrades gracefully: if the client does not support elicitation, or the server has not been initialized, operations proceed without confirmation. This ensures backward compatibility with all MCP clients.
+
+### Completions (Argument Auto-Complete)
+
+Prompt arguments and resource URI variables support auto-completion via the MCP Completions API. When a client sends a `completion/complete` request, the server returns matching suggestions.
+
+**Prompt argument completions:**
+
+- `targetOrg` — All 5 prompts auto-complete with connected org aliases filtered by `ALLOWED_ORGS`
+- `objectName` (soql_builder) — Auto-completes with SObject API names from the resolved target org
+
+**Resource URI completions:**
+
+- `{alias}` — All template resources auto-complete with connected org aliases
+- `{name}` (org_object_schema) — Auto-completes with SObject names from the resolved org
+
+Completions are powered by the SDK's `completable()` wrapper and require no additional client configuration.
+
+### Server Title & Icon
+
+The server provides a human-readable `title` ("Salesforce MCP Server") and an embedded `icon` in its metadata. Clients that support the MCP `Implementation` metadata (SDK 1.25+) will display the server name and icon in their UI. Tool-level icons are not currently supported by the MCP SDK.
+
+### Structured Tool Output
+
+The following tools support MCP structured output (`outputSchema` + `structuredContent`) for programmatic result parsing:
+
+- `query_records` — returns `{ targetOrg, records }`
+- `sobject_list` — returns `{ targetOrg, sobjects }`
+- `sobject_describe` — returns `{ targetOrg, name, label, fields, childRelationships, recordTypeInfos, ... }`
+- `list_connected_salesforce_orgs` — returns `{ devHubOrgs, production, sandboxes, scratchOrgs, totalOrgs }`
+- `get_apex_test_results` — returns `{ targetOrg, summary, tests, codecoverage }`
+
+Clients that support the MCP `outputSchema` capability will receive validated structured data in addition to the text content.
 
 ### Tips for Best Results
 

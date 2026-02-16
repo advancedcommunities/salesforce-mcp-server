@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { platform } from "node:os";
 import { existsSync } from "node:fs";
+import { logger } from "./logger.js";
 
 let cachedSfPath: string | null = null;
 
@@ -54,6 +55,8 @@ export function executeSfCommand(command: string): Promise<any> {
     const quotedPath = sfPath.includes(" ") ? `"${sfPath}"` : sfPath;
     const fullCommand = command.replace(/^sf\s+/, `${quotedPath} `);
 
+    logger.debug("cli", `Executing command: ${fullCommand}`);
+
     return new Promise((resolve, reject) => {
         exec(
             fullCommand,
@@ -64,6 +67,7 @@ export function executeSfCommand(command: string): Promise<any> {
                         error.message.includes("command not found") ||
                         error.message.includes("is not recognized")
                     ) {
+                        logger.error("cli", "Salesforce CLI (sf) not found");
                         reject(
                             new Error(
                                 "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
@@ -84,6 +88,10 @@ export function executeSfCommand(command: string): Promise<any> {
                             // If JSON parsing fails, fall through to reject with original error
                         }
                     }
+                    logger.error(
+                        "cli",
+                        `Command failed: ${fullCommand} — ${error.message}`,
+                    );
                     reject(error);
                     return;
                 }
@@ -108,6 +116,8 @@ export function executeSfCommandRaw(command: string): Promise<string> {
     const quotedPath = sfPath.includes(" ") ? `"${sfPath}"` : sfPath;
     const fullCommand = command.replace(/^sf\s+/, `${quotedPath} `);
 
+    logger.debug("cli", `Executing raw command: ${fullCommand}`);
+
     return new Promise((resolve, reject) => {
         exec(
             fullCommand,
@@ -118,6 +128,7 @@ export function executeSfCommandRaw(command: string): Promise<string> {
                         error.message.includes("command not found") ||
                         error.message.includes("is not recognized")
                     ) {
+                        logger.error("cli", "Salesforce CLI (sf) not found");
                         reject(
                             new Error(
                                 "Salesforce CLI (sf) not found. Please ensure it is installed and accessible. " +
@@ -135,6 +146,10 @@ export function executeSfCommandRaw(command: string): Promise<string> {
                             resolve(stdout);
                             return;
                         }
+                        logger.error(
+                            "cli",
+                            `Raw command failed: ${fullCommand} — ${error.message}`,
+                        );
                         reject(error);
                     }
                     return;
