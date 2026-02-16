@@ -5,6 +5,89 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-16
+
+### Added
+
+- **MCP Resources**: Five new resources for browsable org context:
+  - `salesforce://permissions` - Current server permission settings
+  - `salesforce://org/{alias}/metadata` - Org metadata summary with available metadata types
+  - `salesforce://org/{alias}/objects` - List of all standard and custom SObjects
+  - `salesforce://org/{alias}/object/{name}` - Detailed schema for a specific SObject
+  - `salesforce://org/{alias}/limits` - API limits and usage information
+  - Resource URIs support autocomplete for org aliases and object names
+
+- **MCP Prompts**: Five new templated workflows for guided Salesforce tasks:
+  - `soql_builder` - Describe an SObject and interactively build SOQL queries
+  - `apex_review` - Fetch and perform structured code review of Apex classes
+  - `org_health_check` - Assess org health with live org data
+  - `deploy_checklist` - Generate pre-deployment readiness checklist
+  - `debug_apex` - Fetch and analyze Apex debug logs for errors and performance issues
+  - All prompts respect `ALLOWED_ORGS` permission and support default org fallback
+
+- **MCP Structured Output**: Five core tools now return validated structured data via `outputSchema`:
+  - `query_records` - Returns `{ targetOrg, records }`
+  - `sobject_list` - Returns `{ targetOrg, sobjects }`
+  - `sobject_describe` - Returns detailed SObject schema with fields and relationships
+  - `list_connected_salesforce_orgs` - Returns organized org data by type
+  - `get_apex_test_results` - Returns test summary, individual results, and code coverage
+
+- **MCP Progress Reporting**: Long-running tools now report real-time progress:
+  - `deploy_start` - Reports deployment phases (resolving → validating → deploying)
+  - `run_apex_tests` - Reports test execution progress
+  - `scanner_run` - Reports scanning progress
+  - `scanner_run_dfa` - Reports data flow analysis progress
+  - `run_code_analyzer` - Reports code analysis progress
+  - `query_records_to_file` - Reports export progress
+
+- **MCP Elicitation**: Destructive operations now request user confirmation:
+  - `delete_record` - Confirms before permanently deleting records
+  - `package_uninstall` - Confirms before uninstalling packages
+  - `logout` - Confirms before logging out of orgs
+  - `deploy_start` - Confirms before deployments (skipped for dry-runs)
+  - Gracefully degrades on clients without elicitation support
+
+- **MCP Completions**: Argument auto-completion for prompts and resources:
+  - Prompt arguments auto-complete with connected org aliases
+  - `soql_builder` auto-completes SObject names from target org
+  - Resource URI variables auto-complete org aliases and object names
+  - All completions respect `ALLOWED_ORGS` permission
+
+- **MCP Logging**: Structured logging with named loggers and severity levels:
+  - Logger names: `salesforce`, `cli`, `permissions`
+  - Log levels: `debug`, `info`, `warning`, `error`, `critical`
+  - All tool execution and CLI commands logged with appropriate levels
+  - Clients can set minimum log level via `logging/setLevel`
+
+- **MCP Implementation Metadata**: Enhanced server identity and branding:
+  - Server title: "Salesforce MCP Server" with human-readable display
+  - Embedded base64-encoded server icon (PNG) for client UI display
+  - Improved server description with version and capabilities
+
+- **MCP Registry Support**: Registry publication and verification:
+  - `mcpName` in package.json for MCP registry verification (`io.github.advancedcommunities/salesforce-mcp-server`)
+  - `server.json` for MCP registry publishing with full server metadata
+  - Published to official MCP registry at [mcp.run](https://mcp.run)
+
+- **Tool Annotation System**: All 39 tools migrated to modern `registerTool()` with ToolAnnotations:
+  - Improved type safety and consistency
+  - Better IDE support and documentation generation
+  - Easier maintenance of tool metadata
+
+### Changed
+
+- **TypeScript Configuration**: Updated to ES2023/NodeNext for improved compatibility
+  - Resolves module resolution issues
+  - Better type checking with latest TypeScript features
+
+- **Dependencies**: Updated core dependencies:
+  - @modelcontextprotocol/sdk: Updated to ^1.26.0 with full MCP spec support
+  - zod: Updated to ^4.3.6 for improved schema validation
+
+- **Packaging Format**: Migrated from DXT to MCPB format:
+  - Better distribution and installation experience
+  - Official MCP bundle format for broader client support
+
 ## [1.5.6] - 2026-02-09
 
 ### Added

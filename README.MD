@@ -314,7 +314,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 39 powerful tools:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 39 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
 
 ### Available Tools
 
