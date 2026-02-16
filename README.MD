@@ -757,6 +757,18 @@ User: "I need to document our data model. Can you describe the Order__c object i
 AI: [Provides detailed object metadata]
 ```
 
+### Structured Tool Output
+
+The following tools support MCP structured output (`outputSchema` + `structuredContent`) for programmatic result parsing:
+
+- `query_records` — returns `{ targetOrg, records }`
+- `sobject_list` — returns `{ targetOrg, sobjects }`
+- `sobject_describe` — returns `{ targetOrg, name, label, fields, childRelationships, recordTypeInfos, ... }`
+- `list_connected_salesforce_orgs` — returns `{ devHubOrgs, production, sandboxes, scratchOrgs, totalOrgs }`
+- `get_apex_test_results` — returns `{ targetOrg, summary, tests, codecoverage }`
+
+Clients that support the MCP `outputSchema` capability will receive validated structured data in addition to the text content.
+
 ### Tips for Best Results
 
 1. **Specify the Target Org**: Always mention which org you want to work with (e.g., "in my dev org", "using production")

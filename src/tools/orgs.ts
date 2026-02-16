@@ -251,11 +251,28 @@ const openOrg = async (
 };
 
 export const registerOrgTools = (server: McpServer) => {
+    const orgInfoSchema = z.object({
+        username: z.string(),
+        aliases: z.array(z.string()).nullable().optional(),
+        orgId: z.string().optional(),
+        instanceUrl: z.string().optional(),
+        isDevHub: z.boolean().optional(),
+        apiVersion: z.string().optional(),
+    });
+
     server.registerTool(
         "list_connected_salesforce_orgs",
         {
             description:
                 "List connected Salesforce Orgs. This command retrieves a list of all Salesforce Orgs that are currently connected to the Salesforce CLI. The results are returned in JSON format, providing details about each Org, including its alias, username, and other metadata. Use this command to see which Salesforce Orgs you have access to and can interact with using the Salesforce CLI.",
+            outputSchema: {
+                devHubOrgs: z.array(orgInfoSchema),
+                production: z.array(orgInfoSchema),
+                sandboxes: z.array(orgInfoSchema),
+                scratchOrgs: z.array(orgInfoSchema),
+                totalOrgs: z.number(),
+                permissionMessage: z.string().optional(),
+            },
             annotations: {
                 readOnlyHint: true,
                 destructiveHint: false,
@@ -272,6 +289,7 @@ export const registerOrgTools = (server: McpServer) => {
                         text: JSON.stringify(orgList),
                     },
                 ],
+                structuredContent: orgList.result,
             };
         },
     );

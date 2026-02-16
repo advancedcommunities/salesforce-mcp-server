@@ -532,6 +532,68 @@ export const registerApexTools = (server: McpServer) => {
                         ),
                 }),
             },
+            outputSchema: {
+                targetOrg: z.string(),
+                summary: z.object({
+                    outcome: z.string(),
+                    testsRan: z.number(),
+                    orgId: z.string(),
+                    passing: z.number(),
+                    failing: z.number(),
+                    skipped: z.number(),
+                    passRate: z.string(),
+                    failRate: z.string(),
+                    skipRate: z.string(),
+                    testStartTime: z.string(),
+                    testExecutionTimeInMs: z.number(),
+                    testTotalTimeInMs: z.number(),
+                    testSetupTimeInMs: z.number().optional(),
+                    commandTimeInMs: z.number(),
+                    hostname: z.string(),
+                    username: z.string(),
+                    testRunId: z.string(),
+                    userId: z.string(),
+                    testRunCoverage: z.string().optional(),
+                    orgWideCoverage: z.string().optional(),
+                    totalLines: z.number().optional(),
+                    coveredLines: z.number().optional(),
+                }),
+                tests: z.array(
+                    z.object({
+                        id: z.string(),
+                        queueItemId: z.string(),
+                        stackTrace: z.string().nullable(),
+                        message: z.string().nullable(),
+                        asyncApexJobId: z.string(),
+                        methodName: z.string(),
+                        outcome: z.string(),
+                        apexLogId: z.string().nullable(),
+                        apexClass: z.object({
+                            id: z.string(),
+                            name: z.string(),
+                            namespacePrefix: z.string(),
+                            fullName: z.string(),
+                        }),
+                        runTime: z.number(),
+                        testTimestamp: z.string(),
+                        fullName: z.string(),
+                    }),
+                ),
+                codecoverage: z
+                    .array(
+                        z.object({
+                            apexId: z.string(),
+                            name: z.string(),
+                            type: z.enum(["ApexClass", "ApexTrigger"]),
+                            numLinesCovered: z.number(),
+                            numLinesUncovered: z.number(),
+                            percentage: z.string(),
+                            coveredLines: z.array(z.number()),
+                            uncoveredLines: z.array(z.number()),
+                        }),
+                    )
+                    .optional(),
+            },
             annotations: {
                 readOnlyHint: true,
                 destructiveHint: false,
@@ -554,6 +616,7 @@ export const registerApexTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -569,6 +632,7 @@ export const registerApexTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -577,6 +641,12 @@ export const registerApexTools = (server: McpServer) => {
                 input.testRunId,
                 input.codeCoverage,
             );
+            const structuredContent = {
+                targetOrg,
+                summary: result.summary,
+                tests: result.tests,
+                codecoverage: result.codecoverage,
+            };
             return {
                 content: [
                     {
@@ -584,6 +654,7 @@ export const registerApexTools = (server: McpServer) => {
                         text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
+                structuredContent,
             };
         },
     );

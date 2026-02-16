@@ -45,6 +45,10 @@ export const registerSObjectTools = (server: McpServer) => {
                         ),
                 }),
             },
+            outputSchema: {
+                targetOrg: z.string(),
+                sobjects: z.array(z.string()),
+            },
             annotations: {
                 readOnlyHint: true,
                 destructiveHint: false,
@@ -67,6 +71,7 @@ export const registerSObjectTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -82,10 +87,15 @@ export const registerSObjectTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
             const result = await executeSobjectList(targetOrg);
+            const structuredContent = {
+                targetOrg,
+                sobjects: result.result as string[],
+            };
             return {
                 content: [
                     {
@@ -93,6 +103,7 @@ export const registerSObjectTools = (server: McpServer) => {
                         text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
+                structuredContent,
             };
         },
     );
@@ -115,6 +126,45 @@ export const registerSObjectTools = (server: McpServer) => {
                         .describe("Name of the SObject to describe"),
                 }),
             },
+            outputSchema: {
+                targetOrg: z.string(),
+                name: z.string(),
+                label: z.string(),
+                keyPrefix: z.string().nullable(),
+                custom: z.boolean(),
+                queryable: z.boolean(),
+                fields: z.array(
+                    z.object({
+                        name: z.string(),
+                        label: z.string(),
+                        type: z.string(),
+                        length: z.number(),
+                        nillable: z.boolean(),
+                        custom: z.boolean(),
+                        updateable: z.boolean(),
+                        createable: z.boolean(),
+                        referenceTo: z.array(z.string()),
+                        relationshipName: z.string().nullable(),
+                    }),
+                ),
+                childRelationships: z.array(
+                    z.object({
+                        childSObject: z.string(),
+                        field: z.string(),
+                        relationshipName: z.string().nullable(),
+                    }),
+                ),
+                recordTypeInfos: z.array(
+                    z.object({
+                        name: z.string(),
+                        recordTypeId: z.string(),
+                        active: z.boolean(),
+                        available: z.boolean(),
+                        defaultRecordTypeMapping: z.boolean(),
+                        developerName: z.string(),
+                    }),
+                ),
+            },
             annotations: {
                 readOnlyHint: true,
                 destructiveHint: false,
@@ -137,6 +187,7 @@ export const registerSObjectTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -154,10 +205,49 @@ export const registerSObjectTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
             const result = await executeSObjectDescribe(targetOrg, sObjectName);
+            const describe = result.result as any;
+            const structuredContent = {
+                targetOrg,
+                name: describe.name,
+                label: describe.label,
+                keyPrefix: describe.keyPrefix ?? null,
+                custom: describe.custom,
+                queryable: describe.queryable,
+                fields: (describe.fields || []).map((f: any) => ({
+                    name: f.name,
+                    label: f.label,
+                    type: f.type,
+                    length: f.length,
+                    nillable: f.nillable,
+                    custom: f.custom,
+                    updateable: f.updateable,
+                    createable: f.createable,
+                    referenceTo: f.referenceTo || [],
+                    relationshipName: f.relationshipName ?? null,
+                })),
+                childRelationships: (describe.childRelationships || []).map(
+                    (r: any) => ({
+                        childSObject: r.childSObject,
+                        field: r.field,
+                        relationshipName: r.relationshipName ?? null,
+                    }),
+                ),
+                recordTypeInfos: (describe.recordTypeInfos || []).map(
+                    (rt: any) => ({
+                        name: rt.name,
+                        recordTypeId: rt.recordTypeId,
+                        active: rt.active,
+                        available: rt.available,
+                        defaultRecordTypeMapping: rt.defaultRecordTypeMapping,
+                        developerName: rt.developerName,
+                    }),
+                ),
+            };
             return {
                 content: [
                     {
@@ -165,6 +255,7 @@ export const registerSObjectTools = (server: McpServer) => {
                         text: JSON.stringify({ targetOrg, ...result }),
                     },
                 ],
+                structuredContent,
             };
         },
     );

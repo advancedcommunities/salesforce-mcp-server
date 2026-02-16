@@ -95,6 +95,10 @@ export const registerQueryTools = (server: McpServer) => {
                         ),
                 }),
             },
+            outputSchema: {
+                targetOrg: z.string(),
+                records: z.array(z.record(z.string(), z.unknown())),
+            },
             annotations: {
                 readOnlyHint: true,
                 destructiveHint: false,
@@ -117,6 +121,7 @@ export const registerQueryTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -134,6 +139,7 @@ export const registerQueryTools = (server: McpServer) => {
                             }),
                         },
                     ],
+                    isError: true,
                 };
             }
 
@@ -146,13 +152,15 @@ export const registerQueryTools = (server: McpServer) => {
                 orderBy,
             );
 
+            const structuredContent = { targetOrg, records: result };
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, records: result }),
+                        text: JSON.stringify(structuredContent),
                     },
                 ],
+                structuredContent,
             };
         },
     );
