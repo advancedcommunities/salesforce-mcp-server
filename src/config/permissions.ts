@@ -1,17 +1,22 @@
+import { logger } from "../utils/logger.js";
+
 interface PermissionConfig {
     readOnly: boolean;
-    allowedOrgs: string[] | 'ALL';
+    allowedOrgs: string[] | "ALL";
 }
 
 class PermissionsManager {
     private config: PermissionConfig;
 
     constructor() {
-        const allowedOrgsEnv = process.env.ALLOWED_ORGS || 'ALL';
-        
+        const allowedOrgsEnv = process.env.ALLOWED_ORGS || "ALL";
+
         this.config = {
-            readOnly: process.env.READ_ONLY === 'true',
-            allowedOrgs: allowedOrgsEnv === 'ALL' ? 'ALL' : allowedOrgsEnv.split(',').map(org => org.trim())
+            readOnly: process.env.READ_ONLY === "true",
+            allowedOrgs:
+                allowedOrgsEnv === "ALL"
+                    ? "ALL"
+                    : allowedOrgsEnv.split(",").map((org) => org.trim()),
         };
     }
 
@@ -20,10 +25,19 @@ class PermissionsManager {
     }
 
     isOrgAllowed(targetOrg: string): boolean {
-        return this.config.allowedOrgs === 'ALL' || this.config.allowedOrgs.includes(targetOrg);
+        const allowed =
+            this.config.allowedOrgs === "ALL" ||
+            this.config.allowedOrgs.includes(targetOrg);
+        if (!allowed) {
+            logger.warning(
+                "permissions",
+                `Access denied for org '${targetOrg}'`,
+            );
+        }
+        return allowed;
     }
 
-    getAllowedOrgs(): string[] | 'ALL' {
+    getAllowedOrgs(): string[] | "ALL" {
         return this.config.allowedOrgs;
     }
 }

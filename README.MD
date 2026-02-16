@@ -785,6 +785,22 @@ User: "I need to document our data model. Can you describe the Order__c object i
 AI: [Provides detailed object metadata]
 ```
 
+### Logging
+
+The server emits structured MCP log messages (`notifications/message`) with typed severity levels and named loggers. Clients that support the MCP logging capability will receive these messages automatically.
+
+**Logger names:** `salesforce`, `cli`, `permissions`
+
+**Log levels used:**
+
+- `debug` — CLI command execution details
+- `info` — Server startup and general status
+- `warning` — Permission denials
+- `error` — Command failures and connection errors
+- `critical` — Authentication/auth-info failures
+
+Clients can set a minimum log level via the `logging/setLevel` request to filter out lower-severity messages.
+
 ### Structured Tool Output
 
 The following tools support MCP structured output (`outputSchema` + `structuredContent`) for programmatic result parsing:
