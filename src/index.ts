@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -25,8 +25,9 @@ import { initElicitation } from "./utils/elicitation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function loadServerIcon(): string {
+function loadServerIcon(): string | undefined {
     const iconPath = join(__dirname, "..", "icon.png");
+    if (!existsSync(iconPath)) return undefined;
     const iconData = readFileSync(iconPath);
     return `data:image/png;base64,${iconData.toString("base64")}`;
 }
@@ -64,19 +65,23 @@ function buildServerDescription(): string {
     return description;
 }
 
+const iconSrc = loadServerIcon();
+
 const server = new McpServer(
     {
         name: "salesforce-mcp-server",
         title: "Salesforce MCP Server",
-        version: "1.5.6",
+        version: "1.6.0",
         description: buildServerDescription(),
-        icons: [
-            {
-                src: loadServerIcon(),
-                mimeType: "image/png",
-                sizes: ["512x512"],
-            },
-        ],
+        ...(iconSrc && {
+            icons: [
+                {
+                    src: iconSrc,
+                    mimeType: "image/png",
+                    sizes: ["512x512"],
+                },
+            ],
+        }),
     },
     { capabilities: { logging: {} } },
 );
@@ -103,7 +108,7 @@ registerPrompts(server);
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    logger.info("salesforce", "Salesforce MCP Server v1.5.6 started");
+    logger.info("salesforce", "Salesforce MCP Server v1.6.0 started");
     console.error("Salesforce MCP Server running on stdio");
 }
 
