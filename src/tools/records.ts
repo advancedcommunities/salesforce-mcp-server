@@ -7,6 +7,22 @@ import { exec } from "node:child_process";
 import { platform } from "node:os";
 import z from "zod";
 
+/**
+ * Wraps a Zod object schema with preprocess to handle clients that send
+ * stringified JSON instead of a proper object (e.g., Claude Code).
+ */
+const flexibleInput = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) =>
+    z.preprocess((val) => {
+        if (typeof val === "string") {
+            try {
+                return JSON.parse(val);
+            } catch {
+                return val;
+            }
+        }
+        return val;
+    }, schema);
+
 type McpResponse = {
     content: Array<{
         type: "text";
@@ -298,26 +314,28 @@ export const registerOrgTools = (server: McpServer) => {
         "create_record",
         {
             description:
-                "Create a new record in a Salesforce org using the REST API. Returns the ID of the created record on success.",
+                "Create a new record in a Salesforce org using the REST API. Returns the ID of the created record on success. Input must be a JSON object with keys: sObject (string), recordJson (string), and optionally targetOrg (string).",
             inputSchema: {
-                input: z.object({
-                    targetOrg: z
-                        .string()
-                        .optional()
-                        .describe(
-                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                        ),
-                    sObject: z
-                        .string()
-                        .describe(
-                            "API name of the Salesforce object to create a record for (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SOjbect.",
-                        ),
-                    recordJson: z
-                        .string()
-                        .describe(
-                            'JSON string containing the field values for the new record. Example: \'{"Name": "Acme Corp", "Type": "Customer"}\'. Execute the sobject_describe tool first to get the correct field API names and relationships.',
-                        ),
-                }),
+                input: flexibleInput(
+                    z.object({
+                        targetOrg: z
+                            .string()
+                            .optional()
+                            .describe(
+                                "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                            ),
+                        sObject: z
+                            .string()
+                            .describe(
+                                "API name of the Salesforce object to create a record for (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SOjbect.",
+                            ),
+                        recordJson: z
+                            .string()
+                            .describe(
+                                'JSON string containing the field values for the new record. Example: \'{"Name": "Acme Corp", "Type": "Customer"}\'. Execute the sobject_describe tool first to get the correct field API names and relationships.',
+                            ),
+                    }),
+                ),
             },
             annotations: {
                 readOnlyHint: false,
@@ -354,31 +372,33 @@ export const registerOrgTools = (server: McpServer) => {
         "update_record",
         {
             description:
-                "Update an existing record in a Salesforce org using the REST API. Updates specified fields on the record.",
+                "Update an existing record in a Salesforce org using the REST API. Updates specified fields on the record. Input must be a JSON object with keys: sObject (string), recordId (string), recordJson (string), and optionally targetOrg (string).",
             inputSchema: {
-                input: z.object({
-                    targetOrg: z
-                        .string()
-                        .optional()
-                        .describe(
-                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                        ),
-                    sObject: z
-                        .string()
-                        .describe(
-                            "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject.",
-                        ),
-                    recordId: z
-                        .string()
-                        .describe(
-                            "Salesforce record ID to update (15 or 18 character ID)",
-                        ),
-                    recordJson: z
-                        .string()
-                        .describe(
-                            'JSON string containing the field values to update. Example: \'{"BillingCity": "San Francisco", "Phone": "(555) 123-4567"}\'. Execute the sobject_describe tool first to get the correct field API names. Only include fields you want to update.',
-                        ),
-                }),
+                input: flexibleInput(
+                    z.object({
+                        targetOrg: z
+                            .string()
+                            .optional()
+                            .describe(
+                                "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                            ),
+                        sObject: z
+                            .string()
+                            .describe(
+                                "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject.",
+                            ),
+                        recordId: z
+                            .string()
+                            .describe(
+                                "Salesforce record ID to update (15 or 18 character ID)",
+                            ),
+                        recordJson: z
+                            .string()
+                            .describe(
+                                'JSON string containing the field values to update. Example: \'{"BillingCity": "San Francisco", "Phone": "(555) 123-4567"}\'. Execute the sobject_describe tool first to get the correct field API names. Only include fields you want to update.',
+                            ),
+                    }),
+                ),
             },
             annotations: {
                 readOnlyHint: false,
@@ -415,26 +435,28 @@ export const registerOrgTools = (server: McpServer) => {
         "delete_record",
         {
             description:
-                "Delete a record from a Salesforce org using the REST API. Permanently removes the specified record.",
+                "Delete a record from a Salesforce org using the REST API. Permanently removes the specified record. Input must be a JSON object with keys: sObject (string), recordId (string), and optionally targetOrg (string).",
             inputSchema: {
-                input: z.object({
-                    targetOrg: z
-                        .string()
-                        .optional()
-                        .describe(
-                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                        ),
-                    sObject: z
-                        .string()
-                        .describe(
-                            "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject.",
-                        ),
-                    recordId: z
-                        .string()
-                        .describe(
-                            "Salesforce record ID to delete (15 or 18 character ID)",
-                        ),
-                }),
+                input: flexibleInput(
+                    z.object({
+                        targetOrg: z
+                            .string()
+                            .optional()
+                            .describe(
+                                "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                            ),
+                        sObject: z
+                            .string()
+                            .describe(
+                                "API name of the Salesforce object (e.g., 'Account', 'Contact', 'CustomObject__c'). Execute the sobject_list tool first to get the correct API name of the SObject.",
+                            ),
+                        recordId: z
+                            .string()
+                            .describe(
+                                "Salesforce record ID to delete (15 or 18 character ID)",
+                            ),
+                    }),
+                ),
             },
             annotations: {
                 readOnlyHint: false,
