@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-02-16
+
+### Fixed
+
+- **CRUD Tools Input Validation**: Fixed `create_record`, `update_record`, and `delete_record` tools to accept both stringified JSON and object input. Added `flexibleInput` wrapper using Zod's `z.preprocess` to automatically parse stringified JSON when clients send input as strings instead of objects
+- **CRUD Tool Descriptions**: Improved descriptions for CRUD tools to explicitly document accepted input format with parameter names and examples
+
 ## [1.6.1] - 2026-02-16
 
 ### Fixed
