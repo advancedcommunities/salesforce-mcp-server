@@ -1,0 +1,35 @@
+{
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "name": "io.github.advancedcommunities/salesforce-mcp-server",
+    "title": "Salesforce MCP Server",
+    "description": "MCP server enabling AI assistants to interact with Salesforce orgs through the Salesforce CLI",
+    "version": "1.5.6",
+    "websiteUrl": "https://github.com/advancedcommunities/salesforce-mcp-server/blob/main/README.MD",
+    "repository": {
+        "url": "https://github.com/advancedcommunities/salesforce-mcp-server",
+        "source": "github"
+    },
+    "packages": [
+        {
+            "registryType": "npm",
+            "registryBaseUrl": "https://registry.npmjs.org",
+            "identifier": "@advanced-communities/salesforce-mcp-server",
+            "version": "1.5.6",
+            "transport": {
+                "type": "stdio"
+            },
+            "environmentVariables": [
+                {
+                    "name": "READ_ONLY",
+                    "description": "When set to 'true', prevents Apex code execution (anonymous execution and tests)",
+                    "default": "false"
+                },
+                {
+                    "name": "ALLOWED_ORGS",
+                    "description": "Comma-separated list of allowed org aliases, or 'ALL' to allow access to all authenticated orgs",
+                    "default": "ALL"
+                }
+            ]
+        }
+    ]
+}

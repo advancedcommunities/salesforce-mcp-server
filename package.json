@@ -25,6 +25,7 @@
         "salesforce-development",
         "salesforce-automation"
     ],
+    "mcpName": "io.github.advancedcommunities/salesforce-mcp-server",
     "author": "Advanced Communities",
     "license": "MIT",
     "repository": {
