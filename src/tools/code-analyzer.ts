@@ -9,7 +9,7 @@ const runCodeAnalyzer = async (
     outputFile?: string,
     ruleSelector?: string[],
     severity?: string,
-    configFile?: string
+    configFile?: string,
 ) => {
     let command = "sf code-analyzer run";
 
@@ -52,7 +52,7 @@ const listCodeAnalyzerRules = async (
     target?: string[],
     configFile?: string,
     ruleSelector?: string[],
-    view?: string
+    view?: string,
 ) => {
     let command = "sf code-analyzer rules";
 
@@ -87,47 +87,56 @@ const listCodeAnalyzerRules = async (
 };
 
 export const registerCodeAnalyzerTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "run_code_analyzer",
-        "Analyze code for quality and security issues. Run list_code_analyzer_rules first to select appropriate rules for ruleSelector parameter.",
         {
-            input: z.object({
-                workspace: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Files/folders to analyze. Supports glob patterns. Multiple values are summed. Defaults to current folder '.'"
-                    ),
-                target: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Specific files/folders to target within workspace. Supports glob patterns. Defaults to all workspace files."
-                    ),
-                ruleSelector: z
-                    .array(z.string())
-                    .describe(
-                        'Select rules by engine, severity, name, or tag. Use colons to combine (e.g., "eslint:Security:3"). Multiple selectors create union. Run with "all" to see available values.'
-                    ),
-                outputFile: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Save output to file. Format auto-detected from extension or defaults to JSON."
-                    ),
-                severity: z
-                    .enum(["High", "Medium", "Low"])
-                    .optional()
-                    .describe(
-                        "Exit with error on violations at/above this severity. Default: Low"
-                    ),
-                configFile: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Config file to customize rules/engines. Auto-detects code-analyzer.yml/yaml in current folder. Use 'code-analyzer config' to create."
-                    ),
-            }),
+            description:
+                "Analyze code for quality and security issues. Run list_code_analyzer_rules first to select appropriate rules for ruleSelector parameter.",
+            inputSchema: {
+                input: z.object({
+                    workspace: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Files/folders to analyze. Supports glob patterns. Multiple values are summed. Defaults to current folder '.'",
+                        ),
+                    target: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Specific files/folders to target within workspace. Supports glob patterns. Defaults to all workspace files.",
+                        ),
+                    ruleSelector: z
+                        .array(z.string())
+                        .describe(
+                            'Select rules by engine, severity, name, or tag. Use colons to combine (e.g., "eslint:Security:3"). Multiple selectors create union. Run with "all" to see available values.',
+                        ),
+                    outputFile: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Save output to file. Format auto-detected from extension or defaults to JSON.",
+                        ),
+                    severity: z
+                        .enum(["High", "Medium", "Low"])
+                        .optional()
+                        .describe(
+                            "Exit with error on violations at/above this severity. Default: Low",
+                        ),
+                    configFile: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Config file to customize rules/engines. Auto-detects code-analyzer.yml/yaml in current folder. Use 'code-analyzer config' to create.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const {
@@ -161,7 +170,7 @@ export const registerCodeAnalyzerTools = (server: McpServer) => {
                     outputFile,
                     ruleSelector,
                     severity,
-                    configFile
+                    configFile,
                 );
 
                 return {
@@ -188,43 +197,52 @@ export const registerCodeAnalyzerTools = (server: McpServer) => {
                     ],
                 };
             }
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "list_code_analyzer_rules",
-        "List available code analysis rules with details. Use to determine rules for code-analyzer run command.",
         {
-            input: z.object({
-                workspace: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Files/folders for rule discovery. Supports glob patterns."
-                    ),
-                target: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Specific files/folders to target within workspace. Supports glob patterns. Defaults to all workspace files."
-                    ),
-                configFile: z
-                    .string()
-                    .optional()
-                    .describe("Config file for rule discovery."),
-                ruleSelector: z
-                    .array(z.string())
-                    .optional()
-                    .describe(
-                        "Filter rules by name, tag, category, or engine."
-                    ),
-                view: z
-                    .enum(["detail", "table"])
-                    .optional()
-                    .describe(
-                        "Display format: 'table' (concise) or 'detail' (full info). Default: 'table'."
-                    ),
-            }),
+            description:
+                "List available code analysis rules with details. Use to determine rules for code-analyzer run command.",
+            inputSchema: {
+                input: z.object({
+                    workspace: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Files/folders for rule discovery. Supports glob patterns.",
+                        ),
+                    target: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Specific files/folders to target within workspace. Supports glob patterns. Defaults to all workspace files.",
+                        ),
+                    configFile: z
+                        .string()
+                        .optional()
+                        .describe("Config file for rule discovery."),
+                    ruleSelector: z
+                        .array(z.string())
+                        .optional()
+                        .describe(
+                            "Filter rules by name, tag, category, or engine.",
+                        ),
+                    view: z
+                        .enum(["detail", "table"])
+                        .optional()
+                        .describe(
+                            "Display format: 'table' (concise) or 'detail' (full info). Default: 'table'.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const { workspace, target, configFile, ruleSelector, view } = input;
@@ -235,7 +253,7 @@ export const registerCodeAnalyzerTools = (server: McpServer) => {
                     target,
                     configFile,
                     ruleSelector,
-                    view
+                    view,
                 );
                 return {
                     content: [
@@ -261,6 +279,6 @@ export const registerCodeAnalyzerTools = (server: McpServer) => {
                     ],
                 };
             }
-        }
+        },
     );
 };

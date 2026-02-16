@@ -4,10 +4,17 @@ import { permissions } from "../config/permissions.js";
 import { getDefaultOrg } from "../utils/resolveTargetOrg.js";
 
 export const registerAdminTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "get_server_permissions",
-        "Get current server permission settings",
-        {},
+        {
+            description: "Get current server permission settings",
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
+        },
         async () => {
             const allowedOrgs = permissions.getAllowedOrgs();
             const defaultOrg = await getDefaultOrg();
@@ -23,12 +30,12 @@ export const registerAdminTools = (server: McpServer) => {
                                 allowedOrgs === "ALL"
                                     ? "All orgs are allowed"
                                     : `Access restricted to: ${allowedOrgs.join(
-                                          ", "
+                                          ", ",
                                       )}`,
                         }),
                     },
                 ],
             };
-        }
+        },
     );
 };

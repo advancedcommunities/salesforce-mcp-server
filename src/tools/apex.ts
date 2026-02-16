@@ -17,7 +17,7 @@ import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 const executeAnonymousApex = async (
     targetOrg: string,
-    code: string
+    code: string,
 ): Promise<ExecuteAnonymousResponse> => {
     if (!code || code.trim() === "") {
         throw new Error("Code cannot be empty");
@@ -42,14 +42,14 @@ const executeAnonymousApex = async (
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
 
         if (error.message?.includes("expired access/refresh token")) {
             throw new Error(
                 `Authentication expired for org '${targetOrg}'. ` +
-                    `Please run 'sf org login --alias ${targetOrg}' to re-authenticate.`
+                    `Please run 'sf org login --alias ${targetOrg}' to re-authenticate.`,
             );
         }
 
@@ -65,7 +65,7 @@ const runApexTests = async (
     tests?: string,
     codeCoverage: boolean = true,
     outputFormat: ResultFormat = ResultFormat.json,
-    synchronous: boolean = false
+    synchronous: boolean = false,
 ): Promise<TestResult | TestRunIdResult> => {
     try {
         const connection = await getConnection(targetOrg);
@@ -75,30 +75,30 @@ const runApexTests = async (
             const syncConfig = await testService.buildSyncPayload(
                 testLevel,
                 tests,
-                classNames
+                classNames,
             );
             return await testService.runTestSynchronous(
                 syncConfig,
-                codeCoverage
+                codeCoverage,
             );
         } else {
             const asyncConfig = await testService.buildAsyncPayload(
                 testLevel,
                 tests,
                 classNames,
-                testSuites
+                testSuites,
             );
             return await testService.runTestAsynchronous(
                 asyncConfig,
                 codeCoverage,
-                false
+                false,
             );
         }
     } catch (error: any) {
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
         throw new Error(`Failed to run Apex tests: ${error.message}`);
@@ -108,7 +108,7 @@ const runApexTests = async (
 const getTestResults = async (
     targetOrg: string,
     testRunId: string,
-    codeCoverage: boolean = true
+    codeCoverage: boolean = true,
 ): Promise<TestResult> => {
     try {
         const connection = await getConnection(targetOrg);
@@ -119,7 +119,7 @@ const getTestResults = async (
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
         throw new Error(`Failed to get test results: ${error.message}`);
@@ -129,7 +129,7 @@ const getTestResults = async (
 const getCodeCoverage = async (
     targetOrg: string,
     type: "org-wide" | "from-tests" = "org-wide",
-    testRunId?: string
+    testRunId?: string,
 ): Promise<any> => {
     try {
         const connection = await getConnection(targetOrg);
@@ -137,24 +137,24 @@ const getCodeCoverage = async (
         if (type === "from-tests") {
             if (!testRunId) {
                 throw new Error(
-                    "Test run ID is required for coverage from test results"
+                    "Test run ID is required for coverage from test results",
                 );
             }
             const testService = new TestService(connection);
             const result = await testService.reportAsyncResults(
                 testRunId,
-                true
+                true,
             );
 
             if (result.codecoverage) {
                 const totalLines = result.codecoverage.reduce(
                     (sum, cov) =>
                         sum + cov.numLinesCovered + cov.numLinesUncovered,
-                    0
+                    0,
                 );
                 const coveredLines = result.codecoverage.reduce(
                     (sum, cov) => sum + cov.numLinesCovered,
-                    0
+                    0,
                 );
                 const percentage =
                     totalLines > 0
@@ -200,7 +200,7 @@ const getCodeCoverage = async (
         if (error.name === "NoAuthInfoFound") {
             throw new Error(
                 `No authenticated org found for '${targetOrg}'. ` +
-                    `Please run 'sf org login' to authenticate.`
+                    `Please run 'sf org login' to authenticate.`,
             );
         }
         throw new Error(`Failed to get code coverage: ${error.message}`);
@@ -225,7 +225,7 @@ const generateClass = async (name: string, outputDir: string) => {
 const generateTrigger = async (
     name: string,
     sObjectName: string,
-    outputDir: string
+    outputDir: string,
 ) => {
     let sfCommand = `sf apex generate trigger --name ${name} --json `;
 
@@ -259,7 +259,7 @@ const apexLogList = async (targetOrg: string) => {
 const apexGetLog = async (
     targetOrg: string,
     logId: string,
-    recentLogsNumber: number
+    recentLogsNumber: number,
 ) => {
     let sfCommand = `sf apex get log --target-org ${targetOrg} --json `;
 
@@ -282,22 +282,31 @@ const apexGetLog = async (
 };
 
 export const registerApexTools = (server: McpServer) => {
-    server.tool(
+    server.registerTool(
         "execute_anonymous_apex",
-        "Execute Apex code in a Salesforce Org. This command allows you to run Apex code directly against a specified Salesforce Org. The code is executed in the context of the Org, and the results are returned in JSON format. You can use this command to test Apex code snippets, run batch jobs, or perform other Apex-related tasks. You can review the debug logs of the execution to see the results of the code execution.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce Org Alias to execute the code against. If not provided, uses the default org from SF CLI configuration."
-                    ),
-                code: z
-                    .string()
-                    .describe("Apex code to execute")
-                    .min(1, "Code cannot be empty"),
-            }),
+            description:
+                "Execute Apex code in a Salesforce Org. This command allows you to run Apex code directly against a specified Salesforce Org. The code is executed in the context of the Org, and the results are returned in JSON format. You can use this command to test Apex code snippets, run batch jobs, or perform other Apex-related tasks. You can review the debug logs of the execution to see the results of the code execution.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce Org Alias to execute the code against. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    code: z
+                        .string()
+                        .describe("Apex code to execute")
+                        .min(1, "Code cannot be empty"),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -360,61 +369,72 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "run_apex_tests",
-        "Run Apex tests in a Salesforce Org. This command allows you to execute unit tests with various options including test level, specific classes, suites, and code coverage collection. Tests can be run synchronously or asynchronously. Use this to validate your Apex code and ensure proper test coverage.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce Org Alias to run tests against. If not provided, uses the default org from SF CLI configuration."
-                    ),
-                testLevel: z
-                    .enum([
-                        "RunLocalTests",
-                        "RunAllTestsInOrg",
-                        "RunSpecifiedTests",
-                    ])
-                    .describe(
-                        "Test level - RunLocalTests (all except managed packages), RunAllTestsInOrg (all tests), or RunSpecifiedTests (specific tests only)"
-                    )
-                    .default("RunLocalTests"),
-                classNames: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Apex test class names to run; default is all classes. If you select --class-names, you can't specify --suite-names or --tests. For multiple classes, repeat the flag for each: --class-names Class1 --class-names Class2."
-                    ),
-                testSuites: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Apex test suite names to run. If you select --suite-names, you can't specify --class-names or --tests. For multiple suites, repeat the flag for each: --suite-names Class1 --suite-names Class2."
-                    ),
-                tests: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Apex test class names or IDs and, if applicable, test methods to run; default is all tests. If you specify --tests, you can't specify --class-names or --suite-names. For multiple tests, repeat the flag for each: --tests Test1 --tests Test2."
-                    ),
-                codeCoverage: z
-                    .boolean()
-                    .optional()
-                    .default(true)
-                    .describe("Whether to collect code coverage information"),
-                synchronous: z
-                    .boolean()
-                    .optional()
-                    .default(false)
-                    .describe(
-                        "Whether to run tests synchronously (wait for completion) or asynchronously"
-                    ),
-            }),
+            description:
+                "Run Apex tests in a Salesforce Org. This command allows you to execute unit tests with various options including test level, specific classes, suites, and code coverage collection. Tests can be run synchronously or asynchronously. Use this to validate your Apex code and ensure proper test coverage.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce Org Alias to run tests against. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    testLevel: z
+                        .enum([
+                            "RunLocalTests",
+                            "RunAllTestsInOrg",
+                            "RunSpecifiedTests",
+                        ])
+                        .describe(
+                            "Test level - RunLocalTests (all except managed packages), RunAllTestsInOrg (all tests), or RunSpecifiedTests (specific tests only)",
+                        )
+                        .default("RunLocalTests"),
+                    classNames: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Apex test class names to run; default is all classes. If you select --class-names, you can't specify --suite-names or --tests. For multiple classes, repeat the flag for each: --class-names Class1 --class-names Class2.",
+                        ),
+                    testSuites: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Apex test suite names to run. If you select --suite-names, you can't specify --class-names or --tests. For multiple suites, repeat the flag for each: --suite-names Class1 --suite-names Class2.",
+                        ),
+                    tests: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Apex test class names or IDs and, if applicable, test methods to run; default is all tests. If you specify --tests, you can't specify --class-names or --suite-names. For multiple tests, repeat the flag for each: --tests Test1 --tests Test2.",
+                        ),
+                    codeCoverage: z
+                        .boolean()
+                        .optional()
+                        .default(true)
+                        .describe(
+                            "Whether to collect code coverage information",
+                        ),
+                    synchronous: z
+                        .boolean()
+                        .optional()
+                        .default(false)
+                        .describe(
+                            "Whether to run tests synchronously (wait for completion) or asynchronously",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -472,7 +492,7 @@ export const registerApexTools = (server: McpServer) => {
                 input.tests,
                 input.codeCoverage,
                 ResultFormat.json,
-                input.synchronous
+                input.synchronous,
             );
             return {
                 content: [
@@ -482,33 +502,42 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "get_apex_test_results",
-        "Retrieve results from a previous asynchronous Apex test run. Use this command with a test run ID to get detailed test results including pass/fail status, error messages, stack traces, and optionally code coverage information.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce Org Alias where the tests were run. If not provided, uses the default org from SF CLI configuration."
-                    ),
-                testRunId: z
-                    .string()
-                    .describe(
-                        "The test run ID returned from a previous asynchronous test execution"
-                    ),
-                codeCoverage: z
-                    .boolean()
-                    .optional()
-                    .default(true)
-                    .describe(
-                        "Whether to include code coverage information in the results"
-                    ),
-            }),
+            description:
+                "Retrieve results from a previous asynchronous Apex test run. Use this command with a test run ID to get detailed test results including pass/fail status, error messages, stack traces, and optionally code coverage information.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce Org Alias where the tests were run. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    testRunId: z
+                        .string()
+                        .describe(
+                            "The test run ID returned from a previous asynchronous test execution",
+                        ),
+                    codeCoverage: z
+                        .boolean()
+                        .optional()
+                        .default(true)
+                        .describe(
+                            "Whether to include code coverage information in the results",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -546,7 +575,7 @@ export const registerApexTools = (server: McpServer) => {
             const result = await getTestResults(
                 targetOrg,
                 input.testRunId,
-                input.codeCoverage
+                input.codeCoverage,
             );
             return {
                 content: [
@@ -556,33 +585,42 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "get_apex_code_coverage",
-        "Get code coverage information for a Salesforce Org. This command allows you to retrieve org-wide coverage percentage or coverage details from a specific test run. Use this to monitor and ensure your code meets the 75% coverage requirement.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Target Salesforce Org Alias to get coverage from. If not provided, uses the default org from SF CLI configuration."
-                    ),
-                coverageType: z
-                    .enum(["org-wide", "from-tests"])
-                    .default("org-wide")
-                    .describe(
-                        "Type of coverage to retrieve: org-wide (overall org percentage) or from-tests (coverage from a specific test run)"
-                    ),
-                testRunId: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Test run ID (required when coverageType is 'from-tests')"
-                    ),
-            }),
+            description:
+                "Get code coverage information for a Salesforce Org. This command allows you to retrieve org-wide coverage percentage or coverage details from a specific test run. Use this to monitor and ensure your code meets the 75% coverage requirement.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Target Salesforce Org Alias to get coverage from. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    coverageType: z
+                        .enum(["org-wide", "from-tests"])
+                        .default("org-wide")
+                        .describe(
+                            "Type of coverage to retrieve: org-wide (overall org percentage) or from-tests (coverage from a specific test run)",
+                        ),
+                    testRunId: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Test run ID (required when coverageType is 'from-tests')",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -620,7 +658,7 @@ export const registerApexTools = (server: McpServer) => {
             const result = await getCodeCoverage(
                 targetOrg,
                 input.coverageType as "org-wide" | "from-tests",
-                input.testRunId
+                input.testRunId,
             );
             return {
                 content: [
@@ -630,26 +668,35 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "generate_class",
-        'Generates the Apex *.cls file and associated metadata file. These files must contained in a parent directory called "classes" in your package directory. Either run this command existing directory of this name, or use the --output-dir flag to generate one or point to an existing one.',
         {
-            input: z.object({
-                name: z
-                    .string()
-                    .describe(
-                        "Name of the generated Apex class. The name can be up to 40 characters and must start with a letter."
-                    ),
-                outputDir: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory."
-                    ),
-            }),
+            description:
+                'Generates the Apex *.cls file and associated metadata file. These files must contained in a parent directory called "classes" in your package directory. Either run this command existing directory of this name, or use the --output-dir flag to generate one or point to an existing one.',
+            inputSchema: {
+                input: z.object({
+                    name: z
+                        .string()
+                        .describe(
+                            "Name of the generated Apex class. The name can be up to 40 characters and must start with a letter.",
+                        ),
+                    outputDir: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const { name, outputDir } = input;
@@ -679,30 +726,41 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "generate_trigger",
-        'Generates the Apex trigger *.trigger file and associated metadata file. These files must be contained in a parent directory called "triggers" in your package directory. Either run this command from an existing directory of this name, or use the --output-dir flag to generate one or point to an existing one. If you don\'t specify the --sobject flag, the .trigger file contains the generic placeholder SOBJECT; replace it with the Salesforce object you want to generate a trigger for. If you don\'t specify --event, "before insert" is used.',
         {
-            input: z.object({
-                name: z
-                    .string()
-                    .describe(
-                        "Name of the generated Apex trigger. The name can be up to 40 characters and must start with a letter."
-                    ),
-                sObjectName: z
-                    .string()
-                    .optional()
-                    .describe("Salesforce object to generate a trigger on."),
-                outputDir: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory."
-                    ),
-            }),
+            description:
+                'Generates the Apex trigger *.trigger file and associated metadata file. These files must be contained in a parent directory called "triggers" in your package directory. Either run this command from an existing directory of this name, or use the --output-dir flag to generate one or point to an existing one. If you don\'t specify the --sobject flag, the .trigger file contains the generic placeholder SOBJECT; replace it with the Salesforce object you want to generate a trigger for. If you don\'t specify --event, "before insert" is used.',
+            inputSchema: {
+                input: z.object({
+                    name: z
+                        .string()
+                        .describe(
+                            "Name of the generated Apex trigger. The name can be up to 40 characters and must start with a letter.",
+                        ),
+                    sObjectName: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Salesforce object to generate a trigger on.",
+                        ),
+                    outputDir: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Directory for saving the created files. The location can be an absolute path or relative to the current working directory. The default is the current directory.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             const { name, sObjectName, outputDir } = input;
@@ -726,7 +784,7 @@ export const registerApexTools = (server: McpServer) => {
             const result = await generateTrigger(
                 name,
                 sObjectName || "",
-                outputDir || ""
+                outputDir || "",
             );
             return {
                 content: [
@@ -736,21 +794,30 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "apex_log_list",
-        "Fetch the list of apex debug logs returning the logs with their IDs.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration."
-                    ),
-            }),
+            description:
+                "Fetch the list of apex debug logs returning the logs with their IDs.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -793,31 +860,40 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "apex_get_log",
-        "Fetch the specified log or given number of most recent logs from the org.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration."
-                    ),
-                logId: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "ID of the specific log to display. Execute the apex_get_logs tool before to get the ids."
-                    ),
-                recentLogsNumber: z
-                    .number()
-                    .optional()
-                    .describe("Number of the most recent logs to display."),
-            }),
+            description:
+                "Fetch the specified log or given number of most recent logs from the org.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    logId: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "ID of the specific log to display. Execute the apex_get_logs tool before to get the ids.",
+                        ),
+                    recentLogsNumber: z
+                        .number()
+                        .optional()
+                        .describe("Number of the most recent logs to display."),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: true,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -856,7 +932,7 @@ export const registerApexTools = (server: McpServer) => {
             const result = await apexGetLog(
                 targetOrg,
                 logId || "",
-                recentLogsNumber || 0
+                recentLogsNumber || 0,
             );
             return {
                 content: [
@@ -866,6 +942,6 @@ export const registerApexTools = (server: McpServer) => {
                     },
                 ],
             };
-        }
+        },
     );
 };

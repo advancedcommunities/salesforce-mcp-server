@@ -13,7 +13,7 @@ const executePackageInstall = async (
     apexCompile: "all" | "package" = "all",
     securityType: "AllUsers" | "AdminsOnly" = "AdminsOnly",
     upgradeType: "DeprecateOnly" | "Mixed" | "Delete" = "Mixed",
-    apiVersion?: string
+    apiVersion?: string,
 ) => {
     let sfCommand = `sf package install --package ${packageId} --target-org ${targetOrg} --no-prompt --json`;
 
@@ -57,7 +57,7 @@ const executePackageUninstall = async (
     targetOrg: string,
     packageId: string,
     wait: number = 0,
-    apiVersion?: string
+    apiVersion?: string,
 ) => {
     let sfCommand = `sf package uninstall --package ${packageId} --target-org ${targetOrg} --json`;
 
@@ -78,70 +78,79 @@ const executePackageUninstall = async (
 };
 
 export function registerPackageTools(server: McpServer) {
-    server.tool(
+    server.registerTool(
         "package_install",
-        "Install or upgrade a package version in a Salesforce org. Supports both package IDs (04t) and aliases with various configuration options.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                packageId: z
-                    .string()
-                    .describe(
-                        "ID (starts with 04t) or alias of the package version to install."
-                    ),
-                wait: z
-                    .number()
-                    .optional()
-                    .default(0)
-                    .describe(
-                        "Number of minutes to wait for installation status."
-                    ),
-                installationKey: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Installation key for key-protected package (default: null)."
-                    ),
-                publishWait: z
-                    .number()
-                    .optional()
-                    .default(0)
-                    .describe(
-                        "Maximum number of minutes to wait for the Subscriber Package Version ID to become available in the target org before canceling the install request."
-                    ),
-                apexCompile: z
-                    .enum(["all", "package"])
-                    .optional()
-                    .default("all")
-                    .describe(
-                        "Compile all Apex in the org and package, or only Apex in the package; unlocked packages only."
-                    ),
-                securityType: z
-                    .enum(["AllUsers", "AdminsOnly"])
-                    .optional()
-                    .default("AdminsOnly")
-                    .describe(
-                        "Security access type for the installed package."
-                    ),
-                upgradeType: z
-                    .enum(["DeprecateOnly", "Mixed", "Delete"])
-                    .optional()
-                    .default("Mixed")
-                    .describe(
-                        "Upgrade type for the package installation; available only for unlocked packages. DeprecateOnly: Mark all removed components as deprecated. Mixed: Delete all removed components that can be safely deleted and deprecate the other components. Delete: Delete removed components, except for custom objects and custom fields, that don't have dependencies."
-                    ),
-                apiVersion: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Override the api version used for api requests made by this command"
-                    ),
-            }),
+            description:
+                "Install or upgrade a package version in a Salesforce org. Supports both package IDs (04t) and aliases with various configuration options.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    packageId: z
+                        .string()
+                        .describe(
+                            "ID (starts with 04t) or alias of the package version to install.",
+                        ),
+                    wait: z
+                        .number()
+                        .optional()
+                        .default(0)
+                        .describe(
+                            "Number of minutes to wait for installation status.",
+                        ),
+                    installationKey: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Installation key for key-protected package (default: null).",
+                        ),
+                    publishWait: z
+                        .number()
+                        .optional()
+                        .default(0)
+                        .describe(
+                            "Maximum number of minutes to wait for the Subscriber Package Version ID to become available in the target org before canceling the install request.",
+                        ),
+                    apexCompile: z
+                        .enum(["all", "package"])
+                        .optional()
+                        .default("all")
+                        .describe(
+                            "Compile all Apex in the org and package, or only Apex in the package; unlocked packages only.",
+                        ),
+                    securityType: z
+                        .enum(["AllUsers", "AdminsOnly"])
+                        .optional()
+                        .default("AdminsOnly")
+                        .describe(
+                            "Security access type for the installed package.",
+                        ),
+                    upgradeType: z
+                        .enum(["DeprecateOnly", "Mixed", "Delete"])
+                        .optional()
+                        .default("Mixed")
+                        .describe(
+                            "Upgrade type for the package installation; available only for unlocked packages. DeprecateOnly: Mark all removed components as deprecated. Mixed: Delete all removed components that can be safely deleted and deprecate the other components. Delete: Delete removed components, except for custom objects and custom fields, that don't have dependencies.",
+                        ),
+                    apiVersion: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Override the api version used for api requests made by this command",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -198,7 +207,7 @@ export function registerPackageTools(server: McpServer) {
                     input.apexCompile,
                     input.securityType,
                     input.upgradeType,
-                    input.apiVersion
+                    input.apiVersion,
                 );
                 return {
                     content: [
@@ -223,39 +232,48 @@ export function registerPackageTools(server: McpServer) {
                     ],
                 };
             }
-        }
+        },
     );
 
-    server.tool(
+    server.registerTool(
         "package_uninstall",
-        "Uninstall a second-generation package from the target org. Specify the package ID (starts with 04t) or alias for the package to uninstall.",
         {
-            input: z.object({
-                targetOrg: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                    ),
-                packageId: z
-                    .string()
-                    .describe(
-                        "ID (starts with 04t) or alias of the package version to uninstall."
-                    ),
-                wait: z
-                    .number()
-                    .optional()
-                    .default(0)
-                    .describe(
-                        "Number of minutes to wait for uninstall status."
-                    ),
-                apiVersion: z
-                    .string()
-                    .optional()
-                    .describe(
-                        "Override the api version used for api requests made by this command"
-                    ),
-            }),
+            description:
+                "Uninstall a second-generation package from the target org. Specify the package ID (starts with 04t) or alias for the package to uninstall.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    packageId: z
+                        .string()
+                        .describe(
+                            "ID (starts with 04t) or alias of the package version to uninstall.",
+                        ),
+                    wait: z
+                        .number()
+                        .optional()
+                        .default(0)
+                        .describe(
+                            "Number of minutes to wait for uninstall status.",
+                        ),
+                    apiVersion: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Override the api version used for api requests made by this command",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: false,
+                destructiveHint: true,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
         },
         async ({ input }) => {
             let targetOrg: string;
@@ -307,7 +325,7 @@ export function registerPackageTools(server: McpServer) {
                     targetOrg,
                     input.packageId,
                     input.wait,
-                    input.apiVersion
+                    input.apiVersion,
                 );
                 return {
                     content: [
@@ -332,6 +350,6 @@ export function registerPackageTools(server: McpServer) {
                     ],
                 };
             }
-        }
+        },
     );
 }
