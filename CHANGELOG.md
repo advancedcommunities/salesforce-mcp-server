@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-02-16
+
+### Fixed
+
+- **Icon Loading**: Fixed graceful fallback when icon.png is missing, preventing crashes when running via npx where only the build/ folder is included
+
 ## [1.6.0] - 2026-02-16
 
 ### Added
@@ -87,11 +93,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Packaging Format**: Migrated from DXT to MCPB format:
   - Better distribution and installation experience
   - Official MCP bundle format for broader client support
-
-### Fixed
-
-- **Icon Loading**: Fixed graceful fallback when icon.png is missing, preventing crashes when running via npx where only the build/ folder is included
-- **Version Synchronization**: Corrected version inconsistency in server constructor and startup logs (was showing 1.5.6)
 
 ## [1.5.6] - 2026-02-09
 
