@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-02-19
+
+### Fixed
+
+- **Server Startup Performance**: Removed eager org enumeration from resource template list callbacks that were blocking the MCP connection during handshake. Resource templates still work on-demand via `{alias}` URI parameter and autocomplete provides discoverability without the performance penalty
+
+### Changed
+
+- **README Badges**: Added NPM downloads and GitHub downloads badges to improve visibility of project metrics
+
 ## [1.6.2] - 2026-02-16
 
 ### Fixed

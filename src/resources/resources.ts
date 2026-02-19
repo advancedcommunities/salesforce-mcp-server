@@ -30,43 +30,14 @@ export async function getAccessibleOrgs() {
 }
 
 /**
- * Return the first alias (preferred) or username for an org.
- */
-function getOrgIdentifier(org: {
-    username: string;
-    aliases?: string[] | null;
-}): string {
-    return org.aliases?.[0] ?? org.username;
-}
-
-/**
  * Autocomplete helper for the {alias} URI variable.
  */
 export async function completeAlias(value: string): Promise<string[]> {
     const orgs = await getAccessibleOrgs();
-    const identifiers = orgs.map(getOrgIdentifier);
+    const identifiers = orgs.map((org) => org.aliases?.[0] ?? org.username);
     return identifiers.filter((id) =>
         id.toLowerCase().startsWith(value.toLowerCase()),
     );
-}
-
-/**
- * Factory that creates a `list` callback enumerating one resource per connected org.
- */
-function makeOrgResourceList(pathSuffix: string, labelSuffix: string) {
-    return async () => {
-        const orgs = await getAccessibleOrgs();
-        return {
-            resources: orgs.map((org) => {
-                const id = getOrgIdentifier(org);
-                return {
-                    uri: `salesforce://org/${id}${pathSuffix}`,
-                    name: `${id} ${labelSuffix}`,
-                    mimeType: "application/json" as const,
-                };
-            }),
-        };
-    };
 }
 
 /**
@@ -114,7 +85,7 @@ export function registerResources(server: McpServer) {
     server.registerResource(
         "org_metadata",
         new ResourceTemplate("salesforce://org/{alias}/metadata", {
-            list: makeOrgResourceList("/metadata", "metadata"),
+            list: undefined,
             complete: {
                 alias: completeAlias,
             },
@@ -174,7 +145,7 @@ export function registerResources(server: McpServer) {
     server.registerResource(
         "org_objects",
         new ResourceTemplate("salesforce://org/{alias}/objects", {
-            list: makeOrgResourceList("/objects", "objects"),
+            list: undefined,
             complete: {
                 alias: completeAlias,
             },
@@ -320,7 +291,7 @@ export function registerResources(server: McpServer) {
     server.registerResource(
         "org_limits",
         new ResourceTemplate("salesforce://org/{alias}/limits", {
-            list: makeOrgResourceList("/limits", "limits"),
+            list: undefined,
             complete: {
                 alias: completeAlias,
             },
