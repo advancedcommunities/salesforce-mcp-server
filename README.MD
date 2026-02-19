@@ -41,12 +41,12 @@ This command will:
 - ✅ Easy updates with `npm update`
 - ✅ No need to clone the repository
 
-#### Option 2: Desktop Extension (DXT) - One-Click Installation
+#### Option 2: MCP Bundle (MCPB) - One-Click Installation
 
 For a fully managed installation experience:
 
-1. Download the latest `salesforce-mcp-server.dxt` file from the [releases page](https://github.com/advancedcommunities/salesforce-mcp-server/releases)
-2. Double-click the `.dxt` file to install
+1. Download the latest `salesforce-mcp-server.mcpb` file from the [releases page](https://github.com/advancedcommunities/salesforce-mcp-server/releases)
+2. Double-click the `.mcpb` file to install
 3. The extension will be automatically configured in your AI client
 4. All dependencies will be managed automatically
 
@@ -916,14 +916,14 @@ Clients that support the MCP `outputSchema` capability will receive validated st
 - Review Apex code before execution, especially in production environments
 - Consider using sandbox orgs for testing and development
 
-### Building Desktop Extension (DXT) Locally
+### Building MCP Bundle (MCPB) Locally
 
-If you want to build the Desktop Extension file yourself:
+If you want to build the MCP Bundle file yourself:
 
 1. Clone the repository and navigate to the `salesforce-mcp-server` directory
 2. Install dependencies: `npm install`
-3. Build the DXT file: `npm run build:dxt`
-4. The `.dxt` file will be created in the `dist/` directory
+3. Build the MCPB file: `npm run build:mcpb`
+4. The `.mcpb` file will be created in the `dist/` directory
 5. Share this file with others for easy one-click installation
 
-For more details about Desktop Extensions, see [DXT.md](./DXT.md)
+For more details about MCP Bundles, see [MCPB.md](./MCPB.md)
