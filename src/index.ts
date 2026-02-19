@@ -17,6 +17,7 @@ import { registerSchemaTools } from "./tools/schema.js";
 import { registerSearchTools } from "./tools/search.js";
 import { registerLightningTools } from "./tools/lightning.js";
 import { registerProjectTools } from "./tools/project.js";
+import { registerSkillTools } from "./tools/skill.js";
 import { registerResources } from "./resources/resources.js";
 import { registerPrompts } from "./prompts/prompts.js";
 import { permissions } from "./config/permissions.js";
@@ -58,7 +59,7 @@ function buildServerDescription(): string {
         description += `Security: Full access enabled for all authenticated orgs`;
     }
 
-    description += `\nTools: 39 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment)`;
+    description += `\nTools: 40 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment, skill)`;
     description += `\nResources: 5 available (permissions, org metadata, objects, object schema, limits)`;
     description += `\nPrompts: 5 available (soql_builder, apex_review, org_health_check, deploy_checklist, debug_apex)`;
 
@@ -102,6 +103,7 @@ registerSchemaTools(server);
 registerSearchTools(server);
 registerLightningTools(server);
 registerProjectTools(server);
+registerSkillTools(server);
 registerResources(server);
 registerPrompts(server);
 

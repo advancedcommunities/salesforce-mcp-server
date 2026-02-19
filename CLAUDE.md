@@ -160,3 +160,4 @@ The project supports MCP Bundle (.mcpb) packaging for one-click installation. Th
 - After making changes, always update documentation in both `README.MD` and `manifest.json`
 - After making changes, rebuild the project (`npm run build`) and the MCPB file (`npm run build:mcpb`)
 - Always add the shebang line to `build/index.js` after creating a new build and before publishing — this is critical
+- Use web search to gather the latest information that may not be in the training dataset — Salesforce CLI command syntax, MCP SDK APIs, npm package versions, Salesforce platform updates, and third-party library documentation
