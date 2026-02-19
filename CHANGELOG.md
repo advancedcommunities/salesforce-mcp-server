@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] - 2026-02-19
+
+### Added
+
+- **Claude Code Skill for Salesforce**: New `install_skill` tool that installs domain-specific guidance into Claude Code projects
+  - `install_skill` - Installs comprehensive Salesforce MCP Server skill with tool selection guide, workflow patterns, and best practices
+  - Skill includes guidance for all 40 tools, 5 prompts, 5 resources with practical examples and common pitfalls
+  - Tool count updated from 39 to 40
+
+### Fixed
+
+- **Tool Call Argument Normalization**: Fixed transport-level handling of tool call arguments for improved MCP client compatibility
+  - Some clients send `undefined` or stringified JSON instead of proper objects for tool arguments
+  - Server now automatically normalizes arguments before validation, ensuring consistent behavior across all clients
+
+### Changed
+
+- **Documentation**: Updated README.md to replace legacy DXT references with current MCPB (MCP Bundle) format
+
 ## [1.6.3] - 2026-02-19
 
 ### Fixed

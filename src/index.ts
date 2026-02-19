@@ -42,7 +42,7 @@ function buildServerDescription(): string {
     const allowedOrgs = permissions.getAllowedOrgs();
     const permissionInfo = [];
 
-    let description = `Salesforce MCP Server v1.6.3 - AI-powered Salesforce automation via CLI integration\n`;
+    let description = `Salesforce MCP Server v1.6.4 - AI-powered Salesforce automation via CLI integration\n`;
     description += `Capabilities: Apex execution, SOQL queries, org management, code testing & coverage\n`;
 
     if (readOnlyMode) {
@@ -72,7 +72,7 @@ const server = new McpServer(
     {
         name: "salesforce-mcp-server",
         title: "Salesforce MCP Server",
-        version: "1.6.3",
+        version: "1.6.4",
         description: buildServerDescription(),
         ...(iconSrc && {
             icons: [
@@ -142,7 +142,7 @@ async function main() {
         };
     }
 
-    logger.info("salesforce", "Salesforce MCP Server v1.6.3 started");
+    logger.info("salesforce", "Salesforce MCP Server v1.6.4 started");
     console.error("Salesforce MCP Server running on stdio");
 }
 

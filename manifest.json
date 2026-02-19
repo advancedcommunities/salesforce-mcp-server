@@ -2,7 +2,7 @@
     "manifest_version": "0.3",
     "name": "salesforce-mcp-server",
     "display_name": "Salesforce MCP Server",
-    "version": "1.6.3",
+    "version": "1.6.4",
     "description": "Salesforce MCP Server - Interact with Salesforce orgs through AI assistants",
     "icon": "icon.png",
     "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)",
