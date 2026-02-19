@@ -108,6 +108,38 @@ registerPrompts(server);
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
+
+    // Wrap the transport's onmessage to normalize tool call arguments.
+    // Some MCP clients send undefined (no arguments) or stringified JSON
+    // instead of a proper object, which fails Zod schema validation.
+    const originalOnMessage = transport.onmessage;
+    if (originalOnMessage) {
+        transport.onmessage = (message: any) => {
+            if (
+                "method" in message &&
+                message.method === "tools/call" &&
+                message.params
+            ) {
+                const params = message.params as Record<string, unknown>;
+                if (
+                    params.arguments === undefined ||
+                    params.arguments === null
+                ) {
+                    params.arguments = {};
+                } else if (typeof params.arguments === "string") {
+                    try {
+                        params.arguments = JSON.parse(
+                            params.arguments as string,
+                        );
+                    } catch {
+                        // leave as-is, let the SDK report the validation error
+                    }
+                }
+            }
+            return originalOnMessage(message);
+        };
+    }
+
     logger.info("salesforce", "Salesforce MCP Server v1.6.3 started");
     console.error("Salesforce MCP Server running on stdio");
 }
