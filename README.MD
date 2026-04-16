@@ -150,7 +150,7 @@ To be able to run the MCP Server – you need a client. The client can be any AI
 
 #### Claude Code Skill
 
-The server includes an `install_skill` tool that adds a Salesforce-specific skill to Claude Code. The skill teaches Claude how to effectively use all 40 tools, 5 prompts, and 5 resources together — including tool selection guidance, workflow patterns, and common pitfalls to avoid.
+The server includes an `install_skill` tool that adds a Salesforce-specific skill to Claude Code. The skill teaches Claude how to effectively use all 41 tools, 5 prompts, and 5 resources together — including tool selection guidance, workflow patterns, and common pitfalls to avoid.
 
 **Automatic installation**: Claude can call the `install_skill` tool when working on Salesforce tasks. You can also ask Claude directly: "Install the Salesforce skill."
 
@@ -326,7 +326,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 40 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 41 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
 
 ### Available Tools
 

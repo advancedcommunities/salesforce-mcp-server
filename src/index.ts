@@ -42,7 +42,7 @@ function buildServerDescription(): string {
     const allowedOrgs = permissions.getAllowedOrgs();
     const permissionInfo = [];
 
-    let description = `Salesforce MCP Server v1.6.4 - AI-powered Salesforce automation via CLI integration\n`;
+    let description = `Salesforce MCP Server v1.6.5 - AI-powered Salesforce automation via CLI integration\n`;
     description += `Capabilities: Apex execution, SOQL queries, org management, code testing & coverage\n`;
 
     if (readOnlyMode) {
@@ -59,7 +59,7 @@ function buildServerDescription(): string {
         description += `Security: Full access enabled for all authenticated orgs`;
     }
 
-    description += `\nTools: 40 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment, skill)`;
+    description += `\nTools: 41 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment, skill)`;
     description += `\nResources: 5 available (permissions, org metadata, objects, object schema, limits)`;
     description += `\nPrompts: 5 available (soql_builder, apex_review, org_health_check, deploy_checklist, debug_apex)`;
 
@@ -72,7 +72,7 @@ const server = new McpServer(
     {
         name: "salesforce-mcp-server",
         title: "Salesforce MCP Server",
-        version: "1.6.4",
+        version: "1.6.5",
         description: buildServerDescription(),
         ...(iconSrc && {
             icons: [
@@ -142,7 +142,7 @@ async function main() {
         };
     }
 
-    logger.info("salesforce", "Salesforce MCP Server v1.6.4 started");
+    logger.info("salesforce", "Salesforce MCP Server v1.6.5 started");
     console.error("Salesforce MCP Server running on stdio");
 }
 
