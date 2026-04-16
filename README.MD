@@ -735,7 +735,17 @@ Clear the default target org from the Salesforce CLI configuration. After cleari
 - "Remove the default target org setting"
 - "Unset my default org"
 
-#### 40. Install Skill
+#### 40. Generate Frontdoor URL
+
+Generate an authenticated Salesforce frontdoor URL that allows seamless browser login without re-entering credentials. Useful for browser automation tools (e.g. Playwright) that need to open an authenticated Salesforce session programmatically.
+
+**Example prompts:**
+
+- "Generate a frontdoor URL for my dev org"
+- "Get a frontdoor login URL for sandbox1 pointing to the home page"
+- "Create an authenticated URL for my org redirecting to /lightning/page/home"
+
+#### 41. Install Skill
 
 Install the Salesforce MCP Server skill for Claude Code, providing domain-specific guidance on tool usage, workflows, and best practices.
 

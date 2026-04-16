@@ -133,6 +133,10 @@
             "description": "Open a Salesforce org in a browser"
         },
         {
+            "name": "generate_frontdoor_url",
+            "description": "Generate an authenticated Salesforce frontdoor URL for seamless browser login without re-entering credentials"
+        },
+        {
             "name": "package_install",
             "description": "Install or upgrade a package version in a Salesforce org"
         },
