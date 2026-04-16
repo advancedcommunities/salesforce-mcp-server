@@ -251,6 +251,28 @@ const openOrg = async (
     }
 };
 
+const generateFrontdoorUrl = async (
+    targetOrg: string,
+    retURL: string = "/",
+) => {
+    const sfCommand = `sf org display --target-org ${targetOrg} --json`;
+    const result = await executeSfCommand(sfCommand);
+
+    const instanceUrl = result?.result?.instanceUrl;
+    const accessToken = result?.result?.accessToken;
+
+    if (!instanceUrl || !accessToken) {
+        throw new Error(
+            `Could not retrieve instanceUrl or accessToken for org '${targetOrg}'. Ensure the org is authenticated.`,
+        );
+    }
+
+    const encodedRetURL = encodeURIComponent(retURL);
+    const frontdoorUrl = `${instanceUrl}/secur/frontdoor.jsp?sid=${accessToken}&retURL=${encodedRetURL}`;
+
+    return { frontdoorUrl, instanceUrl, targetOrg };
+};
+
 export const registerOrgTools = (server: McpServer) => {
     const orgInfoSchema = z.object({
         username: z.string(),
@@ -1195,6 +1217,95 @@ export const registerOrgTools = (server: McpServer) => {
                                 message:
                                     error.message ||
                                     "Failed to set default target org",
+                            }),
+                        },
+                    ],
+                };
+            }
+        },
+    );
+
+    server.registerTool(
+        "generate_frontdoor_url",
+        {
+            description:
+                "Generate an authenticated Salesforce frontdoor URL that allows seamless browser login without re-entering credentials. The URL uses the format: {instanceUrl}/secur/frontdoor.jsp?sid={accessToken}&retURL={retURL}. This is useful for programmatic browser automation tools such as the Playwright MCP and Chrome DevTools MCP that need to open an authenticated Salesforce session.",
+            inputSchema: {
+                input: z.object({
+                    targetOrg: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
+                        ),
+                    retURL: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Relative URL to redirect to after login (e.g. '/lightning/page/home'). Defaults to '/'.",
+                        ),
+                }),
+            },
+            annotations: {
+                readOnlyHint: true,
+                destructiveHint: false,
+                idempotentHint: false,
+                openWorldHint: true,
+            },
+        },
+        async ({ input }) => {
+            let targetOrg: string;
+            try {
+                targetOrg = await resolveTargetOrg(input.targetOrg);
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            if (!permissions.isOrgAllowed(targetOrg)) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: `Access to org '${targetOrg}' is not allowed`,
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            try {
+                const result = await generateFrontdoorUrl(
+                    targetOrg,
+                    input.retURL,
+                );
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({ success: true, ...result }),
+                        },
+                    ],
+                };
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: error.message,
                             }),
                         },
                     ],

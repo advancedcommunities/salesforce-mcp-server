@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.5] - 2026-04-16
+
+### Added
+
+- **Frontdoor URL Generation**: New `generate_frontdoor_url` tool for authenticated browser access
+  - Generates a Salesforce frontdoor URL (`{instanceUrl}/secur/frontdoor.jsp?sid={accessToken}&retURL={retURL}`) using credentials from the Salesforce CLI
+  - Supports optional `targetOrg` (defaults to current default org) and `retURL` (defaults to `/`) parameters
+  - Designed for use with browser automation tools such as the Playwright MCP and Chrome DevTools MCP
+  - Respects `ALLOWED_ORGS` permission settings
+
 ## [1.6.4] - 2026-02-19
 
 ### Added
