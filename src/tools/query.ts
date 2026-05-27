@@ -5,6 +5,25 @@ import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
+class SfCliError extends Error {
+    name: string;
+    query: string;
+    constructor(name: string, message: string, query: string) {
+        super(message);
+        this.name = name;
+        this.query = query;
+    }
+}
+
+const extractSfError = (result: any, query: string): SfCliError => {
+    const name = result?.name || "SalesforceError";
+    const message =
+        result?.message ||
+        result?.error ||
+        "Unknown error returned by Salesforce CLI";
+    return new SfCliError(name, message, query);
+};
+
 const executeSoqlQuery = async (
     targetOrg: string,
     sObject: string,
@@ -21,12 +40,11 @@ const executeSoqlQuery = async (
 
     const sfCommand = `sf data query --target-org ${targetOrg} --query "${query}" --json`;
 
-    try {
-        const result = await executeSfCommand(sfCommand);
-        return result.result.records || [];
-    } catch (error) {
-        throw error;
+    const result = await executeSfCommand(sfCommand);
+    if (result?.status !== 0 || !result?.result) {
+        throw extractSfError(result, query);
     }
+    return result.result.records || [];
 };
 
 const executeSoqlQueryToFile = async (
@@ -47,12 +65,31 @@ const executeSoqlQueryToFile = async (
         outputFileName || "output"
     }" --result-format ${outputFileFormat} --json -w 30`;
 
-    try {
-        const result = await executeSfCommand(sfCommand);
-        return result.result;
-    } catch (error) {
-        throw error;
+    const result = await executeSfCommand(sfCommand);
+    if (result?.status !== 0 || !result?.result) {
+        throw extractSfError(result, query);
     }
+    return result.result;
+};
+
+const buildQueryErrorResponse = (error: unknown, targetOrg: string) => {
+    const isSfError = error instanceof SfCliError;
+    const payload: Record<string, unknown> = {
+        success: false,
+        targetOrg,
+        errorName: isSfError ? error.name : "Error",
+        message: error instanceof Error ? error.message : String(error),
+    };
+    if (isSfError) payload.query = error.query;
+    return {
+        content: [
+            {
+                type: "text" as const,
+                text: JSON.stringify(payload),
+            },
+        ],
+        isError: true,
+    };
 };
 
 export const registerQueryTools = (server: McpServer) => {
@@ -144,14 +181,19 @@ export const registerQueryTools = (server: McpServer) => {
                 };
             }
 
-            const result = await executeSoqlQuery(
-                targetOrg,
-                sObject,
-                selectClause,
-                where,
-                limit,
-                orderBy,
-            );
+            let result;
+            try {
+                result = await executeSoqlQuery(
+                    targetOrg,
+                    sObject,
+                    selectClause,
+                    where,
+                    limit,
+                    orderBy,
+                );
+            } catch (error) {
+                return buildQueryErrorResponse(error, targetOrg);
+            }
 
             const structuredContent = { targetOrg, records: result };
             return {
@@ -266,15 +308,20 @@ export const registerQueryTools = (server: McpServer) => {
             }
 
             reportProgress("Exporting records to file...");
-            const result = await executeSoqlQueryToFile(
-                targetOrg,
-                sObject,
-                selectClause,
-                where,
-                outputFileName,
-                outputFileFormat as "csv" | "json",
-                orderBy,
-            );
+            let result;
+            try {
+                result = await executeSoqlQueryToFile(
+                    targetOrg,
+                    sObject,
+                    selectClause,
+                    where,
+                    outputFileName,
+                    outputFileFormat as "csv" | "json",
+                    orderBy,
+                );
+            } catch (error) {
+                return buildQueryErrorResponse(error, targetOrg);
+            }
 
             return {
                 content: [
