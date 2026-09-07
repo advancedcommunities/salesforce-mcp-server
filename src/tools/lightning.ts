@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand, executeSfCommandRaw } from "../utils/sfCommand.js";
 
 const generateComponent = async (
@@ -10,18 +11,18 @@ const generateComponent = async (
     outputDirectory: string,
     type: string,
 ) => {
-    let sfCommand = `sf lightning generate component --name ${name} --json `;
+    let sfCommand = `sf lightning generate component --name ${shq(name)} --json `;
 
     if (template && template.length > 0) {
-        sfCommand += `--template ${template} `;
+        sfCommand += `--template ${shq(template)} `;
     }
 
     if (outputDirectory && outputDirectory.length > 0) {
-        sfCommand += `--output-dir ${outputDirectory} `;
+        sfCommand += `--output-dir ${shq(outputDirectory)} `;
     }
 
     if (type && type.length > 0) {
-        sfCommand += `--type ${type}`;
+        sfCommand += `--type ${shq(type)}`;
     }
 
     try {

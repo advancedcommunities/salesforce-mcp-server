@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { requestConfirmation } from "../utils/elicitation.js";
@@ -17,22 +18,22 @@ const deployStart = async (
     tests: string,
     testLevel: string,
 ) => {
-    let sfCommand = `sf project deploy start --target-org ${targetOrg} --json `;
+    let sfCommand = `sf project deploy start --target-org ${shq(targetOrg)} --json `;
 
     if (dryRun) {
         sfCommand += `--dry-run `;
     }
 
     if (manifest && manifest.length > 0) {
-        sfCommand += `--manifest ${manifest} `;
+        sfCommand += `--manifest ${shq(manifest)} `;
     }
 
     if (metadata && metadata.length > 0) {
-        sfCommand += `--metadata ${metadata} `;
+        sfCommand += `--metadata ${shq(metadata)} `;
     }
 
     if (metadataDirectory && metadataDirectory.length > 0) {
-        sfCommand += `--metadata-dir ${metadataDirectory} `;
+        sfCommand += `--metadata-dir ${shq(metadataDirectory)} `;
     }
 
     if (singlePackage) {
@@ -40,15 +41,15 @@ const deployStart = async (
     }
 
     if (sourceDirectory && sourceDirectory.length > 0) {
-        sfCommand += `--source-dir ${sourceDirectory} `;
+        sfCommand += `--source-dir ${shq(sourceDirectory)} `;
     }
 
     if (tests && tests.length > 0) {
-        sfCommand += `--tests ${tests} `;
+        sfCommand += `--tests ${shq(tests)} `;
     }
 
     if (testLevel && testLevel.length > 0) {
-        sfCommand += `--test-level ${testLevel} `;
+        sfCommand += `--test-level ${shq(testLevel)} `;
     }
 
     try {

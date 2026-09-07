@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
@@ -16,34 +17,34 @@ const executePackageInstall = async (
     upgradeType: "DeprecateOnly" | "Mixed" | "Delete" = "Mixed",
     apiVersion?: string,
 ) => {
-    let sfCommand = `sf package install --package ${packageId} --target-org ${targetOrg} --no-prompt --json`;
+    let sfCommand = `sf package install --package ${shq(packageId)} --target-org ${shq(targetOrg)} --no-prompt --json`;
 
     if (wait > 0) {
-        sfCommand += ` --wait ${wait}`;
+        sfCommand += ` --wait ${shq(wait)}`;
     }
 
     if (installationKey) {
-        sfCommand += ` --installation-key ${installationKey}`;
+        sfCommand += ` --installation-key ${shq(installationKey)}`;
     }
 
     if (publishWait > 0) {
-        sfCommand += ` --publish-wait ${publishWait}`;
+        sfCommand += ` --publish-wait ${shq(publishWait)}`;
     }
 
     if (apexCompile) {
-        sfCommand += ` --apex-compile ${apexCompile}`;
+        sfCommand += ` --apex-compile ${shq(apexCompile)}`;
     }
 
     if (securityType) {
-        sfCommand += ` --security-type ${securityType}`;
+        sfCommand += ` --security-type ${shq(securityType)}`;
     }
 
     if (upgradeType) {
-        sfCommand += ` --upgrade-type ${upgradeType}`;
+        sfCommand += ` --upgrade-type ${shq(upgradeType)}`;
     }
 
     if (apiVersion) {
-        sfCommand += ` --api-version ${apiVersion}`;
+        sfCommand += ` --api-version ${shq(apiVersion)}`;
     }
 
     try {
@@ -60,14 +61,14 @@ const executePackageUninstall = async (
     wait: number = 0,
     apiVersion?: string,
 ) => {
-    let sfCommand = `sf package uninstall --package ${packageId} --target-org ${targetOrg} --json`;
+    let sfCommand = `sf package uninstall --package ${shq(packageId)} --target-org ${shq(targetOrg)} --json`;
 
     if (wait > 0) {
-        sfCommand += ` --wait ${wait}`;
+        sfCommand += ` --wait ${shq(wait)}`;
     }
 
     if (apiVersion) {
-        sfCommand += ` --api-version ${apiVersion}`;
+        sfCommand += ` --api-version ${shq(apiVersion)}`;
     }
 
     try {
