@@ -12,6 +12,7 @@ import {
 } from "@salesforce/apex-node";
 import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
@@ -209,10 +210,10 @@ const getCodeCoverage = async (
 };
 
 const generateClass = async (name: string, outputDir: string) => {
-    let sfCommand = `sf apex generate class --name ${name} --json `;
+    let sfCommand = `sf apex generate class --name ${shq(name)} --json `;
 
     if (outputDir && outputDir.length > 0) {
-        sfCommand += `--output-dir ${outputDir}`;
+        sfCommand += `--output-dir ${shq(outputDir)}`;
     }
 
     try {
@@ -228,14 +229,14 @@ const generateTrigger = async (
     sObjectName: string,
     outputDir: string,
 ) => {
-    let sfCommand = `sf apex generate trigger --name ${name} --json `;
+    let sfCommand = `sf apex generate trigger --name ${shq(name)} --json `;
 
     if (sObjectName && sObjectName.length > 0) {
-        sfCommand += `--sobject ${sObjectName} `;
+        sfCommand += `--sobject ${shq(sObjectName)} `;
     }
 
     if (outputDir && outputDir.length > 0) {
-        sfCommand += `--output-dir ${outputDir}`;
+        sfCommand += `--output-dir ${shq(outputDir)}`;
     }
 
     try {
@@ -247,7 +248,7 @@ const generateTrigger = async (
 };
 
 const apexLogList = async (targetOrg: string) => {
-    let sfCommand = `sf apex log list --target-org ${targetOrg} --json `;
+    let sfCommand = `sf apex log list --target-org ${shq(targetOrg)} --json `;
 
     try {
         const result = await executeSfCommand(sfCommand);
@@ -262,16 +263,16 @@ const apexGetLog = async (
     logId: string,
     recentLogsNumber: number,
 ) => {
-    let sfCommand = `sf apex get log --target-org ${targetOrg} --json `;
+    let sfCommand = `sf apex get log --target-org ${shq(targetOrg)} --json `;
 
     const hasLogId = logId && logId.length > 0;
 
     if (hasLogId) {
-        sfCommand += `--log-id ${logId} `;
+        sfCommand += `--log-id ${shq(logId)} `;
     }
 
     if (!hasLogId && recentLogsNumber !== 0) {
-        sfCommand += `--number ${recentLogsNumber}`;
+        sfCommand += `--number ${shq(recentLogsNumber)}`;
     }
 
     try {

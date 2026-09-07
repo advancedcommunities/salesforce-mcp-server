@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
@@ -16,32 +17,32 @@ const runCodeAnalyzer = async (
 
     if (workspace && workspace.length > 0) {
         workspace.forEach((w) => {
-            command += ` --workspace "${w}"`;
+            command += ` --workspace ${shq(w)}`;
         });
     }
 
     if (target && target.length > 0) {
         target.forEach((t) => {
-            command += ` --target "${t}"`;
+            command += ` --target ${shq(t)}`;
         });
     }
 
     if (outputFile) {
-        command += ` --output-file "${outputFile}"`;
+        command += ` --output-file ${shq(outputFile)}`;
     }
 
     if (ruleSelector && ruleSelector.length > 0) {
         ruleSelector.forEach((rs) => {
-            command += ` --rule-selector "${rs}"`;
+            command += ` --rule-selector ${shq(rs)}`;
         });
     }
 
     if (severity) {
-        command += ` --severity-threshold ${severity}`;
+        command += ` --severity-threshold ${shq(severity)}`;
     }
 
     if (configFile) {
-        command += ` --config-file "${configFile}"`;
+        command += ` --config-file ${shq(configFile)}`;
     }
 
     const result = await executeSfCommandRaw(command);
@@ -59,28 +60,28 @@ const listCodeAnalyzerRules = async (
 
     if (workspace && workspace.length > 0) {
         workspace.forEach((w) => {
-            command += ` --workspace "${w}"`;
+            command += ` --workspace ${shq(w)}`;
         });
     }
 
     if (target && target.length > 0) {
         target.forEach((t) => {
-            command += ` --target "${t}"`;
+            command += ` --target ${shq(t)}`;
         });
     }
 
     if (configFile) {
-        command += ` --config-file "${configFile}"`;
+        command += ` --config-file ${shq(configFile)}`;
     }
 
     if (ruleSelector && ruleSelector.length > 0) {
         ruleSelector.forEach((rs) => {
-            command += ` --rule-selector "${rs}"`;
+            command += ` --rule-selector ${shq(rs)}`;
         });
     }
 
     if (view) {
-        command += ` --view ${view}`;
+        command += ` --view ${shq(view)}`;
     }
 
     const result = await executeSfCommandRaw(command);

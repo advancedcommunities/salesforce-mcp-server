@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { listAllOrgs } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import {
     resolveTargetOrg,
@@ -63,7 +64,7 @@ const listConnectedSalesforceOrgs = async () => {
 };
 
 const loginIntoOrg = async (alias: string, isProduction: boolean) => {
-    let sfCommand = `sf org login web -a ${alias} --json `;
+    let sfCommand = `sf org login web -a ${shq(alias)} --json `;
     sfCommand += isProduction
         ? `-r https://login.salesforce.com`
         : `-r https://test.salesforce.com`;
@@ -81,15 +82,15 @@ const assignPermissionSet = async (
     permissionSetNames: string[],
     onBehalfOf?: string[],
 ) => {
-    let sfCommand = `sf org assign permset --target-org ${targetOrg}`;
+    let sfCommand = `sf org assign permset --target-org ${shq(targetOrg)}`;
 
     permissionSetNames.forEach((name) => {
-        sfCommand += ` --name "${name}"`;
+        sfCommand += ` --name ${shq(name)}`;
     });
 
     if (onBehalfOf && onBehalfOf.length > 0) {
         onBehalfOf.forEach((user) => {
-            sfCommand += ` --on-behalf-of "${user}"`;
+            sfCommand += ` --on-behalf-of ${shq(user)}`;
         });
     }
 
@@ -108,15 +109,15 @@ const assignPermissionSetLicense = async (
     licenseNames: string[],
     onBehalfOf?: string[],
 ) => {
-    let sfCommand = `sf org assign permsetlicense --target-org ${targetOrg}`;
+    let sfCommand = `sf org assign permsetlicense --target-org ${shq(targetOrg)}`;
 
     licenseNames.forEach((name) => {
-        sfCommand += ` --name "${name}"`;
+        sfCommand += ` --name ${shq(name)}`;
     });
 
     if (onBehalfOf && onBehalfOf.length > 0) {
         onBehalfOf.forEach((user) => {
-            sfCommand += ` --on-behalf-of "${user}"`;
+            sfCommand += ` --on-behalf-of ${shq(user)}`;
         });
     }
 
@@ -131,7 +132,7 @@ const assignPermissionSetLicense = async (
 };
 
 const displayUserInfo = async (targetOrg: string) => {
-    const sfCommand = `sf org display user --target-org ${targetOrg} --json`;
+    const sfCommand = `sf org display user --target-org ${shq(targetOrg)} --json`;
 
     try {
         const result = await executeSfCommand(sfCommand);
@@ -148,18 +149,18 @@ const listMetadata = async (
     apiVersion?: string,
     outputFile?: string,
 ) => {
-    let sfCommand = `sf org list metadata --target-org ${targetOrg} --metadata-type ${metadataType}`;
+    let sfCommand = `sf org list metadata --target-org ${shq(targetOrg)} --metadata-type ${shq(metadataType)}`;
 
     if (folder) {
-        sfCommand += ` --folder "${folder}"`;
+        sfCommand += ` --folder ${shq(folder)}`;
     }
 
     if (apiVersion) {
-        sfCommand += ` --api-version ${apiVersion}`;
+        sfCommand += ` --api-version ${shq(apiVersion)}`;
     }
 
     if (outputFile) {
-        sfCommand += ` --output-file "${outputFile}"`;
+        sfCommand += ` --output-file ${shq(outputFile)}`;
     }
 
     sfCommand += ` --json`;
@@ -177,14 +178,14 @@ const listMetadataTypes = async (
     apiVersion?: string,
     outputFile?: string,
 ) => {
-    let sfCommand = `sf org list metadata-types --target-org ${targetOrg}`;
+    let sfCommand = `sf org list metadata-types --target-org ${shq(targetOrg)}`;
 
     if (apiVersion) {
-        sfCommand += ` --api-version ${apiVersion}`;
+        sfCommand += ` --api-version ${shq(apiVersion)}`;
     }
 
     if (outputFile) {
-        sfCommand += ` --output-file "${outputFile}"`;
+        sfCommand += ` --output-file ${shq(outputFile)}`;
     }
 
     sfCommand += ` --json`;
@@ -203,7 +204,7 @@ const logoutFromOrg = async (targetOrg?: string, all?: boolean) => {
     if (all) {
         sfCommand += ` --all`;
     } else if (targetOrg) {
-        sfCommand += ` --target-org ${targetOrg}`;
+        sfCommand += ` --target-org ${shq(targetOrg)}`;
     }
 
     sfCommand += ` --no-prompt --json`;
@@ -223,14 +224,14 @@ const openOrg = async (
     privateMode?: boolean,
     sourceFile?: string,
 ) => {
-    let sfCommand = `sf org open --target-org ${targetOrg}`;
+    let sfCommand = `sf org open --target-org ${shq(targetOrg)}`;
 
     if (path) {
-        sfCommand += ` --path "${path}"`;
+        sfCommand += ` --path ${shq(path)}`;
     }
 
     if (browser) {
-        sfCommand += ` --browser ${browser}`;
+        sfCommand += ` --browser ${shq(browser)}`;
     }
 
     if (privateMode) {
@@ -238,7 +239,7 @@ const openOrg = async (
     }
 
     if (sourceFile) {
-        sfCommand += ` --source-file "${sourceFile}"`;
+        sfCommand += ` --source-file ${shq(sourceFile)}`;
     }
 
     sfCommand += ` --json`;
@@ -255,7 +256,7 @@ const generateFrontdoorUrl = async (
     targetOrg: string,
     retURL: string = "/",
 ) => {
-    const sfCommand = `sf org display --target-org ${targetOrg} --json`;
+    const sfCommand = `sf org display --target-org ${shq(targetOrg)} --json`;
     const result = await executeSfCommand(sfCommand);
 
     const instanceUrl = result?.result?.instanceUrl;
@@ -1191,7 +1192,7 @@ export const registerOrgTools = (server: McpServer) => {
 
             try {
                 const result = await executeSfCommand(
-                    `sf config set target-org=${targetOrg} --json`,
+                    `sf config set target-org=${shq(targetOrg)} --json`,
                 );
                 clearDefaultOrgCache();
                 return {

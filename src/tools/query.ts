@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
+import { shq } from "../utils/shellEscape.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
@@ -38,7 +39,7 @@ const executeSoqlQuery = async (
     if (orderBy) query += " ORDER BY " + orderBy;
     if (limit) query += " LIMIT " + limit;
 
-    const sfCommand = `sf data query --target-org ${targetOrg} --query "${query}" --json`;
+    const sfCommand = `sf data query --target-org ${shq(targetOrg)} --query ${shq(query)} --json`;
 
     const result = await executeSfCommand(sfCommand);
     if (result?.status !== 0 || !result?.result) {
@@ -61,9 +62,9 @@ const executeSoqlQueryToFile = async (
     if (where) query += " WHERE " + where;
     if (orderBy) query += " ORDER BY " + orderBy;
 
-    const sfCommand = `sf data export bulk --query "${query}" --target-org ${targetOrg} --output-file "${
-        outputFileName || "output"
-    }" --result-format ${outputFileFormat} --json -w 30`;
+    const sfCommand = `sf data export bulk --query ${shq(query)} --target-org ${shq(targetOrg)} --output-file ${shq(
+        outputFileName || "output",
+    )} --result-format ${shq(outputFileFormat)} --json -w 30`;
 
     const result = await executeSfCommand(sfCommand);
     if (result?.status !== 0 || !result?.result) {

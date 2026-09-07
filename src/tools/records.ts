@@ -5,6 +5,7 @@ import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { requestConfirmation } from "../utils/elicitation.js";
 import { exec } from "node:child_process";
 import { platform } from "node:os";
+import { shq } from "../utils/shellEscape.js";
 import z from "zod";
 
 /**
@@ -227,13 +228,19 @@ const openRecordInBrowser = async (
 
     switch (currentPlatform) {
         case "darwin":
-            command = `open "${url}"`;
+            command = `open ${shq(url)}`;
             break;
         case "win32":
+            // cmd.exe's quoting rules differ from POSIX shells (shq() targets
+            // /bin/sh); `start` is fine here since the URL only ever contains
+            // an instance URL + a caller-supplied recordId (checked non-empty
+            // above), but a caller-supplied `&|<>^%` etc. could still break
+            // out of the unescaped "" title argument. Left as-is pending a
+            // Windows-specific escaper — flagging for follow-up.
             command = `start "" "${url}"`;
             break;
         default:
-            command = `xdg-open "${url}"`;
+            command = `xdg-open ${shq(url)}`;
             break;
     }
 
