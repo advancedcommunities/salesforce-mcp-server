@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.7] - 2026-09-16
+
+### Fixed
+
+- **JSON Schema Dialect**: Tool schemas now advertise with JSON Schema 2020-12 dialect instead of draft-07
+    - Fixes client validation errors when using Ajv 2020-12-only validators
+    - Resolves "Tool has an invalid outputSchema: JSON Schema declares an unsupported dialect" errors
+    - All advertised schemas compile under Ajv 2020-12 in strict mode
+
 ## [1.6.6] - 2026-05-27
 
 ### Fixed

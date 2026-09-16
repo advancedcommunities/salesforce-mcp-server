@@ -73,7 +73,7 @@ const server = new McpServer(
     {
         name: "salesforce-mcp-server",
         title: "Salesforce MCP Server",
-        version: "1.6.6",
+        version: "1.6.7",
         description: buildServerDescription(),
         ...(iconSrc && {
             icons: [
