@@ -23,6 +23,7 @@ import { registerPrompts } from "./prompts/prompts.js";
 import { permissions } from "./config/permissions.js";
 import { initLogger, logger } from "./utils/logger.js";
 import { initElicitation } from "./utils/elicitation.js";
+import { applySchemaDialectFix } from "./utils/schemaDialect.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -109,6 +110,11 @@ registerPrompts(server);
 
 async function main() {
     const transport = new StdioServerTransport();
+
+    // Advertise tool schemas with the JSON Schema 2020-12 dialect instead of
+    // the draft-07 one the SDK emits, which 2020-12-only clients reject.
+    applySchemaDialectFix(transport);
+
     await server.connect(transport);
 
     // Wrap the transport's onmessage to normalize tool call arguments.

@@ -891,7 +891,7 @@ The following tools support MCP structured output (`outputSchema` + `structuredC
 - `list_connected_salesforce_orgs` — returns `{ devHubOrgs, production, sandboxes, scratchOrgs, totalOrgs }`
 - `get_apex_test_results` — returns `{ targetOrg, summary, tests, codecoverage }`
 
-Clients that support the MCP `outputSchema` capability will receive validated structured data in addition to the text content.
+Clients that support the MCP `outputSchema` capability will receive validated structured data in addition to the text content. All tool schemas are advertised with the JSON Schema 2020-12 dialect so that clients validating `outputSchema` with a 2020-12-only validator accept them.
 
 ### Tips for Best Results
 
@@ -918,6 +918,8 @@ Clients that support the MCP `outputSchema` capability will receive validated st
 **"Query error"**: Check your SOQL syntax and field names
 
 **"Apex execution failed"**: Review the debug logs for specific error messages
+
+**"Tool ... has an invalid outputSchema: JSON Schema declares an unsupported dialect"**: Update to the latest server version — tool schemas are now published as JSON Schema 2020-12 instead of draft-07
 
 ### Security Considerations
 
