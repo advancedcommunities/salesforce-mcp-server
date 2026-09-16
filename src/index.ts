@@ -23,8 +23,12 @@ import { registerPrompts } from "./prompts/prompts.js";
 import { permissions } from "./config/permissions.js";
 import { initLogger, logger } from "./utils/logger.js";
 import { initElicitation } from "./utils/elicitation.js";
+import { applySchemaDialectFix } from "./utils/schemaDialect.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/** Single source of truth for the server version; keep in sync with package.json */
+const SERVER_VERSION = "1.6.7";
 
 function loadServerIcon(): string | undefined {
     const iconPath = join(__dirname, "..", "icon.png");
@@ -42,7 +46,7 @@ function buildServerDescription(): string {
     const allowedOrgs = permissions.getAllowedOrgs();
     const permissionInfo = [];
 
-    let description = `Salesforce MCP Server v1.6.5 - AI-powered Salesforce automation via CLI integration\n`;
+    let description = `Salesforce MCP Server v${SERVER_VERSION} - AI-powered Salesforce automation via CLI integration\n`;
     description += `Capabilities: Apex execution, SOQL queries, org management, code testing & coverage\n`;
 
     if (readOnlyMode) {
@@ -72,7 +76,7 @@ const server = new McpServer(
     {
         name: "salesforce-mcp-server",
         title: "Salesforce MCP Server",
-        version: "1.6.6",
+        version: SERVER_VERSION,
         description: buildServerDescription(),
         ...(iconSrc && {
             icons: [
@@ -109,6 +113,11 @@ registerPrompts(server);
 
 async function main() {
     const transport = new StdioServerTransport();
+
+    // Advertise tool schemas with the JSON Schema 2020-12 dialect instead of
+    // the draft-07 one the SDK emits, which 2020-12-only clients reject.
+    applySchemaDialectFix(transport);
+
     await server.connect(transport);
 
     // Wrap the transport's onmessage to normalize tool call arguments.
@@ -142,7 +151,10 @@ async function main() {
         };
     }
 
-    logger.info("salesforce", "Salesforce MCP Server v1.6.5 started");
+    logger.info(
+        "salesforce",
+        `Salesforce MCP Server v${SERVER_VERSION} started`,
+    );
     console.error("Salesforce MCP Server running on stdio");
 }
 
