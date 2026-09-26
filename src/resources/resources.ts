@@ -6,6 +6,7 @@ import { permissions } from "../config/permissions.js";
 import { getDefaultOrg } from "../utils/resolveTargetOrg.js";
 import { listAllOrgs, getOrgInfo } from "../shared/connection.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
+import { shq } from "../utils/shellEscape.js";
 import {
     executeSobjectList,
     executeSObjectDescribe,
@@ -44,11 +45,15 @@ export async function completeAlias(value: string): Promise<string[]> {
  * Validate org access for template resources. Returns the resolved alias
  * or throws a structured error response.
  */
-function validateOrgAccess(alias: string): string {
+async function validateOrgAccess(alias: string): Promise<string> {
     if (!permissions.isOrgAllowed(alias)) {
         throw new Error(
             `Access denied: Org '${alias}' is not in the allowed list`,
         );
+    }
+    // ALLOWED_ORGS defaults to "ALL", so also require an authenticated org.
+    if (!(await getOrgInfo(alias))) {
+        throw new Error(`Org '${alias}' is not an authenticated org`);
     }
     return alias;
 }
@@ -97,10 +102,10 @@ export function registerResources(server: McpServer) {
         },
         async (_uri, { alias }) => {
             try {
-                const orgAlias = validateOrgAccess(alias as string);
+                const orgAlias = await validateOrgAccess(alias as string);
                 const orgInfo = await getOrgInfo(orgAlias);
                 const metadataResult = await executeSfCommand(
-                    `sf org list metadata-types --target-org ${orgAlias} --json`,
+                    `sf org list metadata-types --target-org ${shq(orgAlias)} --json`,
                 );
 
                 const metadataTypes = (
@@ -157,7 +162,7 @@ export function registerResources(server: McpServer) {
         },
         async (_uri, { alias }) => {
             try {
-                const orgAlias = validateOrgAccess(alias as string);
+                const orgAlias = await validateOrgAccess(alias as string);
                 const result = await executeSobjectList(orgAlias);
 
                 return {
@@ -215,7 +220,7 @@ export function registerResources(server: McpServer) {
         },
         async (_uri, { alias, name }) => {
             try {
-                const orgAlias = validateOrgAccess(alias as string);
+                const orgAlias = await validateOrgAccess(alias as string);
                 const objectName = name as string;
                 const result = await executeSObjectDescribe(
                     orgAlias,
@@ -303,9 +308,9 @@ export function registerResources(server: McpServer) {
         },
         async (_uri, { alias }) => {
             try {
-                const orgAlias = validateOrgAccess(alias as string);
+                const orgAlias = await validateOrgAccess(alias as string);
                 const result = await executeSfCommand(
-                    `sf limits api display --target-org ${orgAlias} --json`,
+                    `sf limits api display --target-org ${shq(orgAlias)} --json`,
                 );
 
                 const limits = (result?.result || []).map((l: any) => ({

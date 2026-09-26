@@ -4,6 +4,7 @@ import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
+import { shq } from "../utils/shellEscape.js";
 import {
     executeSobjectList,
     executeSObjectDescribe,
@@ -204,8 +205,14 @@ Then build the final SOQL query for me.`,
         async (args) => {
             try {
                 const org = await resolveAndValidateOrg(args.targetOrg);
+                if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(args.className)) {
+                    return errorPromptResult(
+                        `Invalid Apex class name '${args.className}'.`,
+                    );
+                }
+                const query = `SELECT Name, Body, LengthWithoutComments, ApiVersion FROM ApexClass WHERE Name = '${args.className}'`;
                 const queryResult = await executeSfCommand(
-                    `sf data query --query "SELECT Name, Body, LengthWithoutComments, ApiVersion FROM ApexClass WHERE Name = '${args.className}'" --target-org ${org} --json`,
+                    `sf data query --query ${shq(query)} --target-org ${shq(org)} --json`,
                 );
 
                 const records = queryResult?.result?.records || [];
@@ -281,10 +288,10 @@ Provide specific findings with line references and suggested improvements.`,
                     await Promise.all([
                         getOrgInfo(org),
                         executeSfCommand(
-                            `sf limits api display --target-org ${org} --json`,
+                            `sf limits api display --target-org ${shq(org)} --json`,
                         ),
                         executeSfCommand(
-                            `sf data query --query "SELECT PercentCovered FROM ApexOrgWideCoverage" --target-org ${org} --json`,
+                            `sf data query --query "SELECT PercentCovered FROM ApexOrgWideCoverage" --target-org ${shq(org)} --json`,
                         ).catch(() => null),
                     ]);
 
@@ -378,10 +385,10 @@ Please analyze this data and provide:
 
                 const [limitsResult, coverageResult] = await Promise.all([
                     executeSfCommand(
-                        `sf limits api display --target-org ${org} --json`,
+                        `sf limits api display --target-org ${shq(org)} --json`,
                     ),
                     executeSfCommand(
-                        `sf data query --query "SELECT PercentCovered FROM ApexOrgWideCoverage" --target-org ${org} --json`,
+                        `sf data query --query "SELECT PercentCovered FROM ApexOrgWideCoverage" --target-org ${shq(org)} --json`,
                     ).catch(() => null),
                 ]);
 
@@ -482,8 +489,13 @@ Please review this checklist against the org data and help me:
                 let logId = args.logId;
 
                 if (logId) {
+                    if (!/^[A-Za-z0-9]{15}([A-Za-z0-9]{3})?$/.test(logId)) {
+                        return errorPromptResult(
+                            `Invalid Apex log Id '${logId}'.`,
+                        );
+                    }
                     const logResult = await executeSfCommand(
-                        `sf apex get log --log-id ${logId} --target-org ${org} --json`,
+                        `sf apex get log --log-id ${shq(logId)} --target-org ${shq(org)} --json`,
                     );
                     logContent =
                         logResult?.result?.[0]?.log ||
@@ -491,7 +503,7 @@ Please review this checklist against the org data and help me:
                         JSON.stringify(logResult?.result);
                 } else {
                     const listResult = await executeSfCommand(
-                        `sf apex log list --target-org ${org} --json`,
+                        `sf apex log list --target-org ${shq(org)} --json`,
                     );
                     const logs = listResult?.result || [];
                     if (logs.length === 0) {
@@ -501,7 +513,7 @@ Please review this checklist against the org data and help me:
                     }
                     logId = logs[0].Id;
                     const logResult = await executeSfCommand(
-                        `sf apex get log --log-id ${logId} --target-org ${org} --json`,
+                        `sf apex get log --log-id ${shq(logs[0].Id)} --target-org ${shq(org)} --json`,
                     );
                     logContent =
                         logResult?.result?.[0]?.log ||

@@ -231,12 +231,9 @@ const openRecordInBrowser = async (
             command = `open ${shq(url)}`;
             break;
         case "win32":
-            // cmd.exe's quoting rules differ from POSIX shells (shq() targets
-            // /bin/sh); `start` is fine here since the URL only ever contains
-            // an instance URL + a caller-supplied recordId (checked non-empty
-            // above), but a caller-supplied `&|<>^%` etc. could still break
-            // out of the unescaped "" title argument. Left as-is pending a
-            // Windows-specific escaper — flagging for follow-up.
+            // `start` is a cmd.exe builtin, not the sf.cmd batch file shq()
+            // escapes for. The URL is safe unescaped here because recordId is
+            // validated as a Salesforce Id by the open_record handler.
             command = `start "" "${url}"`;
             break;
         default:
@@ -296,6 +293,12 @@ export const registerOrgTools = (server: McpServer) => {
 
             if (!recordId || recordId.trim() === "") {
                 return createErrorResponse("Salesforce record Id is required");
+            }
+
+            if (!/^[A-Za-z0-9]{15}([A-Za-z0-9]{3})?$/.test(recordId)) {
+                return createErrorResponse(
+                    `Invalid Salesforce record Id '${recordId}'`,
+                );
             }
 
             const permissionError = checkOrgPermissions(targetOrg);
