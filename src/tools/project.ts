@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
-import { shq, splitMultiValue } from "../utils/shellEscape.js";
+import { expandPath, shq, splitMultiValue } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { requestConfirmation } from "../utils/elicitation.js";
@@ -25,7 +25,7 @@ const deployStart = async (
     }
 
     if (manifest && manifest.length > 0) {
-        sfCommand += `--manifest ${shq(manifest)} `;
+        sfCommand += `--manifest ${shq(expandPath(manifest))} `;
     }
 
     if (metadata && metadata.length > 0) {
@@ -35,7 +35,7 @@ const deployStart = async (
     }
 
     if (metadataDirectory && metadataDirectory.length > 0) {
-        sfCommand += `--metadata-dir ${shq(metadataDirectory)} `;
+        sfCommand += `--metadata-dir ${shq(expandPath(metadataDirectory))} `;
     }
 
     if (singlePackage) {
@@ -43,7 +43,9 @@ const deployStart = async (
     }
 
     if (sourceDirectory && sourceDirectory.length > 0) {
-        for (const value of splitMultiValue(sourceDirectory)) {
+        for (const value of splitMultiValue(sourceDirectory, process.platform, {
+            expandPaths: true,
+        })) {
             sfCommand += `--source-dir ${shq(value)} `;
         }
     }

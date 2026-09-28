@@ -3,13 +3,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { exec, execFileSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
     shq,
     posixQuote,
     cmdQuote,
     splitMultiValue,
+    expandPath,
 } from "../build/utils/shellEscape.js";
 
 const isWindows = process.platform === "win32";
@@ -177,23 +178,238 @@ test("cmdQuote: rejects double quotes and line breaks", () => {
 
 // ── Multi-value flags ─────────────────────────────────────────────
 
-test("splitMultiValue splits on whitespace and keeps quoted parts", () => {
-    assert.deepEqual(splitMultiValue("Test1 Test2"), ["Test1", "Test2"]);
-    assert.deepEqual(splitMultiValue("  ApexClass:Foo\tApexClass:Bar  "), [
-        "ApexClass:Foo",
-        "ApexClass:Bar",
-    ]);
-    assert.deepEqual(splitMultiValue('Layout:"Account-Account Layout" X'), [
+test("splitMultiValue splits on whitespace and keeps double-quoted parts", () => {
+    for (const platform of ["linux", "win32"]) {
+        const split = (v) => splitMultiValue(v, platform);
+        assert.deepEqual(split("Test1 Test2"), ["Test1", "Test2"]);
+        assert.deepEqual(split("  ApexClass:Foo\tApexClass:Bar  "), [
+            "ApexClass:Foo",
+            "ApexClass:Bar",
+        ]);
+        assert.deepEqual(split('Layout:"Account-Account Layout" X'), [
+            "Layout:Account-Account Layout",
+            "X",
+        ]);
+        assert.deepEqual(split('"force-app/my dir" force-app/main'), [
+            "force-app/my dir",
+            "force-app/main",
+        ]);
+        assert.deepEqual(split("single"), ["single"]);
+        assert.deepEqual(split("   "), []);
+    }
+});
+
+test("splitMultiValue defaults to the current platform", () => {
+    const value = "'a b' c\\ d";
+    withPlatform("linux", () =>
+        assert.deepEqual(splitMultiValue(value), ["a b", "c d"]),
+    );
+    withPlatform("win32", () =>
+        assert.deepEqual(splitMultiValue(value), ["'a", "b'", "c\\", "d"]),
+    );
+});
+
+test("splitMultiValue on POSIX honors single quotes and backslashes", () => {
+    const split = (v) => splitMultiValue(v, "darwin");
+    assert.deepEqual(split("'Layout:Account-Account Layout' X"), [
         "Layout:Account-Account Layout",
         "X",
     ]);
-    assert.deepEqual(splitMultiValue('"force-app/my dir" force-app/main'), [
+    assert.deepEqual(split("force-app/my\\ dir force-app/main"), [
         "force-app/my dir",
         "force-app/main",
     ]);
-    assert.deepEqual(splitMultiValue("single"), ["single"]);
-    assert.deepEqual(splitMultiValue("   "), []);
+    assert.deepEqual(split(`'say "hi"' "it's" a\\'b`), [
+        'say "hi"',
+        "it's",
+        "a'b",
+    ]);
+    assert.deepEqual(split('"a\\"b\\\\c\\d"'), ['a"b\\c\\d']);
+    assert.deepEqual(split("'' x"), ["", "x"]);
 });
+
+test("splitMultiValue on Windows keeps backslashes and single quotes", () => {
+    const split = (v) => splitMultiValue(v, "win32");
+    assert.deepEqual(split("C:\\proj\\force-app 'x y'"), [
+        "C:\\proj\\force-app",
+        "'x",
+        "y'",
+    ]);
+    assert.deepEqual(split('"C:\\my dir\\" D:\\x'), ["C:\\my dir\\", "D:\\x"]);
+});
+
+test("splitMultiValue on Windows drops a lone quote like the earlier regex", () => {
+    const split = (v) => splitMultiValue(v, "win32");
+    assert.deepEqual(split('"unterminated x'), ["unterminated", "x"]);
+    assert.deepEqual(split('x "Foo Bar'), ["x", "Foo", "Bar"]);
+    assert.deepEqual(split('"a b" "c d'), ["a b", "c", "d"]);
+});
+
+const shSplitCases = [
+    "Test1 Test2",
+    "'Layout:Account-Account Layout' ApexClass:Foo",
+    'Layout:"Account-Account Layout"',
+    "force-app/my\\ dir force-app/main",
+    `'say "hi"' "it's" a\\'b`,
+    '"a\\"b\\\\c\\d\\$x"',
+    "a'b c'd \"e f\"g",
+    "'' x",
+    "\\;x \\&y",
+    "a b c d",
+];
+
+test(
+    "splitMultiValue on POSIX matches /bin/sh word splitting",
+    {
+        skip: isWindows,
+    },
+    () => {
+        for (const value of shSplitCases) {
+            const argv = JSON.parse(
+                execFileSync("/bin/sh", [
+                    "-c",
+                    `node -e 'console.log(JSON.stringify(process.argv.slice(1)))' -- ${value}`,
+                ]).toString(),
+            );
+            assert.deepEqual(splitMultiValue(value, "linux"), argv, value);
+        }
+    },
+);
+
+// Only set, allowlisted variables: sh turns an unset one into "".
+const shExpandCases = [
+    `'~'/x \\~/x ~"/x"`,
+    `\\$HOME '$HOME' "$HOME"/x`,
+    "~ ~/a a~b x/~",
+    `\${HOME}x a$HOME "a b"$HOME`,
+];
+
+test(
+    "splitMultiValue with expandPaths matches /bin/sh expansion",
+    {
+        skip: isWindows,
+    },
+    () => {
+        for (const value of shExpandCases) {
+            const argv = JSON.parse(
+                execFileSync("/bin/sh", [
+                    "-c",
+                    `set -f; node -e 'console.log(JSON.stringify(process.argv.slice(1)))' -- ${value}`,
+                ]).toString(),
+            );
+            assert.deepEqual(
+                splitMultiValue(value, "linux", { expandPaths: true }),
+                argv,
+                value,
+            );
+        }
+    },
+);
+
+test("splitMultiValue with expandPaths on Windows expands only ~", () => {
+    assert.deepEqual(
+        splitMultiValue('~\\proj "~\\x" $HOME', "win32", {
+            expandPaths: true,
+        }),
+        [`${homedir()}\\proj`, "~\\x", "$HOME"],
+    );
+});
+
+// ── Path expansion ───────────────────────────────────────────────
+
+test("expandPath expands a leading ~ on every platform", () => {
+    const home = homedir();
+    for (const platform of ["linux", "darwin", "win32"]) {
+        assert.equal(expandPath("~", platform), home);
+        assert.equal(expandPath("~/proj/x", platform), `${home}/proj/x`);
+        assert.equal(expandPath("a/~/b", platform), "a/~/b");
+        assert.equal(expandPath("~user/x", platform), "~user/x");
+    }
+    assert.equal(expandPath("~\\proj", "win32"), `${home}\\proj`);
+    assert.equal(expandPath("~\\proj", "linux"), "~\\proj");
+});
+
+test("expandPath expands $NAME and ${NAME} on POSIX only", () => {
+    process.env.XDG_SFMCP_TEST_DIR = "/work/dir";
+    delete process.env.XDG_SFMCP_UNSET_DIR;
+    try {
+        assert.equal(
+            expandPath("$XDG_SFMCP_TEST_DIR/x", "linux"),
+            "/work/dir/x",
+        );
+        assert.equal(
+            expandPath("${XDG_SFMCP_TEST_DIR}x", "darwin"),
+            "/work/dirx",
+        );
+        assert.equal(
+            expandPath("~/$XDG_SFMCP_TEST_DIR", "linux"),
+            `${homedir()}//work/dir`,
+        );
+        // Unknown variables stay literal instead of becoming empty.
+        assert.equal(
+            expandPath("$XDG_SFMCP_UNSET_DIR/${XDG_SFMCP_UNSET_DIR}", "linux"),
+            "$XDG_SFMCP_UNSET_DIR/${XDG_SFMCP_UNSET_DIR}",
+        );
+        // Variables that are not path-like are never expanded.
+        process.env.SFMCP_TEST_SECRET = "s3cr3t";
+        assert.equal(
+            expandPath("x/$SFMCP_TEST_SECRET/${SFMCP_TEST_SECRET}", "linux"),
+            "x/$SFMCP_TEST_SECRET/${SFMCP_TEST_SECRET}",
+        );
+        assert.deepEqual(
+            splitMultiValue("$SFMCP_TEST_SECRET", "linux", {
+                expandPaths: true,
+            }),
+            ["$SFMCP_TEST_SECRET"],
+        );
+        assert.equal(
+            expandPath("$XDG_SFMCP_TEST_DIR %XDG_SFMCP_TEST_DIR%", "win32"),
+            "$XDG_SFMCP_TEST_DIR %XDG_SFMCP_TEST_DIR%",
+        );
+        withPlatform("linux", () =>
+            assert.equal(expandPath("$XDG_SFMCP_TEST_DIR"), "/work/dir"),
+        );
+    } finally {
+        delete process.env.XDG_SFMCP_TEST_DIR;
+        delete process.env.SFMCP_TEST_SECRET;
+    }
+});
+
+test("expandPath on POSIX removes one pair of surrounding quotes", () => {
+    const home = homedir();
+    assert.equal(expandPath('"my classes"', "linux"), "my classes");
+    assert.equal(expandPath("'~/$HOME'", "linux"), "~/$HOME");
+    assert.equal(expandPath('"~/$HOME"', "linux"), `~/${process.env.HOME}`);
+    assert.equal(
+        expandPath("my classes/O'Brien", "linux"),
+        "my classes/O'Brien",
+    );
+    assert.equal(expandPath(`~/"my dir"`, "linux"), `${home}/"my dir"`);
+    assert.equal(expandPath('"C:\\my dir"', "win32"), '"C:\\my dir"');
+});
+
+test(
+    "expandPath output still goes through shq without injection",
+    {
+        skip: isWindows,
+    },
+    () => {
+        process.env.XDG_SFMCP_EVIL_DIR = `x; touch ${marker}; $(touch ${marker})`;
+        try {
+            rmSync(marker, { force: true });
+            const value = expandPath("$XDG_SFMCP_EVIL_DIR/dir", "linux");
+            const out = execFileSync("/bin/sh", [
+                "-c",
+                `printf '%s' ${posixQuote(value)}`,
+            ]).toString();
+            assert.equal(out, `${process.env.XDG_SFMCP_EVIL_DIR}/dir`);
+            assert.equal(existsSync(marker), false);
+        } finally {
+            delete process.env.XDG_SFMCP_EVIL_DIR;
+            rmSync(marker, { force: true });
+        }
+    },
+);
 
 test(
     "multi-value flag: each token becomes its own escaped flag",
@@ -202,7 +418,7 @@ test(
     },
     () => {
         let command = "";
-        for (const value of splitMultiValue("Test1 Test2;touch_x")) {
+        for (const value of splitMultiValue("Test1 Test2;touch_x", "linux")) {
             command += `--tests ${posixQuote(value)} `;
         }
         assert.equal(command, `--tests 'Test1' --tests 'Test2;touch_x' `);

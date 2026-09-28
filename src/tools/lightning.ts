@@ -2,7 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
-import { shq } from "../utils/shellEscape.js";
+import { expandPath, shq } from "../utils/shellEscape.js";
 import { executeSfCommand, executeSfCommandRaw } from "../utils/sfCommand.js";
 
 const generateComponent = async (
@@ -18,7 +18,7 @@ const generateComponent = async (
     }
 
     if (outputDirectory && outputDirectory.length > 0) {
-        sfCommand += `--output-dir ${shq(outputDirectory)} `;
+        sfCommand += `--output-dir ${shq(expandPath(outputDirectory))} `;
     }
 
     if (type && type.length > 0) {

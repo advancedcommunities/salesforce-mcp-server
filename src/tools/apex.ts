@@ -12,7 +12,7 @@ import {
 } from "@salesforce/apex-node";
 import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
-import { shq } from "../utils/shellEscape.js";
+import { expandPath, shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
@@ -213,7 +213,7 @@ const generateClass = async (name: string, outputDir: string) => {
     let sfCommand = `sf apex generate class --name ${shq(name)} --json `;
 
     if (outputDir && outputDir.length > 0) {
-        sfCommand += `--output-dir ${shq(outputDir)}`;
+        sfCommand += `--output-dir ${shq(expandPath(outputDir))}`;
     }
 
     try {
@@ -236,7 +236,7 @@ const generateTrigger = async (
     }
 
     if (outputDir && outputDir.length > 0) {
-        sfCommand += `--output-dir ${shq(outputDir)}`;
+        sfCommand += `--output-dir ${shq(expandPath(outputDir))}`;
     }
 
     try {
