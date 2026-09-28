@@ -5,6 +5,7 @@ import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { requestConfirmation } from "../utils/elicitation.js";
 import { exec } from "node:child_process";
 import { platform } from "node:os";
+import { shq } from "../utils/shellEscape.js";
 import z from "zod";
 
 /**
@@ -227,13 +228,16 @@ const openRecordInBrowser = async (
 
     switch (currentPlatform) {
         case "darwin":
-            command = `open "${url}"`;
+            command = `open ${shq(url)}`;
             break;
         case "win32":
+            // `start` is a cmd.exe builtin, not the sf.cmd batch file shq()
+            // escapes for. The URL is safe unescaped here because recordId is
+            // validated as a Salesforce Id by the open_record handler.
             command = `start "" "${url}"`;
             break;
         default:
-            command = `xdg-open "${url}"`;
+            command = `xdg-open ${shq(url)}`;
             break;
     }
 
@@ -289,6 +293,12 @@ export const registerOrgTools = (server: McpServer) => {
 
             if (!recordId || recordId.trim() === "") {
                 return createErrorResponse("Salesforce record Id is required");
+            }
+
+            if (!/^[A-Za-z0-9]{15}([A-Za-z0-9]{3})?$/.test(recordId)) {
+                return createErrorResponse(
+                    `Invalid Salesforce record Id '${recordId}'`,
+                );
             }
 
             const permissionError = checkOrgPermissions(targetOrg);

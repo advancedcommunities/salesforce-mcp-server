@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import z from "zod";
 
@@ -34,7 +35,7 @@ const schemaGenerateTab = async (
     }
 
     try {
-        let sfCommand = `sf schema generate tab --object "${object}" --directory "${directory}" --icon ${icon}`;
+        let sfCommand = `sf schema generate tab --object ${shq(object)} --directory ${shq(directory)} --icon ${shq(icon)}`;
 
         const result = await executeSfCommand(sfCommand);
         return { result };

@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
 export const executeSobjectList = async (targetOrg: string) => {
-    const sfCommand = `sf sobject list --sobject all --target-org ${targetOrg} --json`;
+    const sfCommand = `sf sobject list --sobject all --target-org ${shq(targetOrg)} --json`;
 
     try {
         const result = await executeSfCommand(sfCommand);
@@ -19,7 +20,7 @@ export const executeSObjectDescribe = async (
     targetOrg: string,
     sObjectName: string,
 ) => {
-    const sfCommand = `sf sobject describe --sobject ${sObjectName} --target-org ${targetOrg} --json`;
+    const sfCommand = `sf sobject describe --sobject ${shq(sObjectName)} --target-org ${shq(targetOrg)} --json`;
 
     try {
         const result = await executeSfCommand(sfCommand);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shq } from "../utils/shellEscape.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
@@ -22,39 +23,39 @@ const runScanner = async (
     let command = "sf scanner run";
 
     if (target && target.length > 0) {
-        command += ` --target "${target.join(",")}"`;
+        command += ` --target ${shq(target.join(","))}`;
     }
 
     if (category && category.length > 0) {
-        command += ` --category "${category.join(",")}"`;
+        command += ` --category ${shq(category.join(","))}`;
     }
 
     if (engine && engine.length > 0) {
-        command += ` --engine "${engine.join(",")}"`;
+        command += ` --engine ${shq(engine.join(","))}`;
     }
 
     if (eslintConfig) {
-        command += ` --eslintconfig "${eslintConfig}"`;
+        command += ` --eslintconfig ${shq(eslintConfig)}`;
     }
 
     if (pmdConfig) {
-        command += ` --pmdconfig "${pmdConfig}"`;
+        command += ` --pmdconfig ${shq(pmdConfig)}`;
     }
 
     if (tsConfig) {
-        command += ` --tsconfig "${tsConfig}"`;
+        command += ` --tsconfig ${shq(tsConfig)}`;
     }
 
     if (format) {
-        command += ` --format ${format}`;
+        command += ` --format ${shq(format)}`;
     }
 
     if (outfile) {
-        command += ` --outfile "${outfile}"`;
+        command += ` --outfile ${shq(outfile)}`;
     }
 
     if (severityThreshold !== undefined) {
-        command += ` --severity-threshold ${severityThreshold}`;
+        command += ` --severity-threshold ${shq(severityThreshold)}`;
     }
 
     if (normalizeSeverity) {
@@ -62,7 +63,7 @@ const runScanner = async (
     }
 
     if (projectDir && projectDir.length > 0) {
-        command += ` --projectdir "${projectDir.join(",")}"`;
+        command += ` --projectdir ${shq(projectDir.join(","))}`;
     }
 
     if (verbose) {
@@ -96,27 +97,27 @@ const runScannerDfa = async (
     let command = "sf scanner run dfa";
 
     if (target && target.length > 0) {
-        command += ` --target "${target.join(",")}"`;
+        command += ` --target ${shq(target.join(","))}`;
     }
 
     if (projectDir && projectDir.length > 0) {
-        command += ` --projectdir "${projectDir.join(",")}"`;
+        command += ` --projectdir ${shq(projectDir.join(","))}`;
     }
 
     if (category && category.length > 0) {
-        command += ` --category "${category.join(",")}"`;
+        command += ` --category ${shq(category.join(","))}`;
     }
 
     if (format) {
-        command += ` --format ${format}`;
+        command += ` --format ${shq(format)}`;
     }
 
     if (outfile) {
-        command += ` --outfile "${outfile}"`;
+        command += ` --outfile ${shq(outfile)}`;
     }
 
     if (severityThreshold !== undefined) {
-        command += ` --severity-threshold ${severityThreshold}`;
+        command += ` --severity-threshold ${shq(severityThreshold)}`;
     }
 
     if (normalizeSeverity) {
@@ -132,11 +133,11 @@ const runScannerDfa = async (
     }
 
     if (ruleThreadCount !== undefined) {
-        command += ` --rule-thread-count ${ruleThreadCount}`;
+        command += ` --rule-thread-count ${shq(ruleThreadCount)}`;
     }
 
     if (ruleThreadTimeout !== undefined) {
-        command += ` --rule-thread-timeout ${ruleThreadTimeout}`;
+        command += ` --rule-thread-timeout ${shq(ruleThreadTimeout)}`;
     }
 
     if (ruleDisableWarningViolation) {
@@ -144,11 +145,11 @@ const runScannerDfa = async (
     }
 
     if (sfgeJvmArgs) {
-        command += ` --sfgejvmargs "${sfgeJvmArgs}"`;
+        command += ` --sfgejvmargs ${shq(sfgeJvmArgs)}`;
     }
 
     if (pathExpLimit !== undefined) {
-        command += ` --pathexplimit ${pathExpLimit}`;
+        command += ` --pathexplimit ${shq(pathExpLimit)}`;
     }
 
     const result = await executeSfCommandRaw(command);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
+import { shq } from "../utils/shellEscape.js";
 import { permissions } from "../config/permissions.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 
@@ -13,9 +14,9 @@ const executeSoslQuery = async (
     let sfCommand: string;
 
     if (query) {
-        sfCommand = `sf data search --target-org ${targetOrg} --query "${query}" --result-format ${resultFormat}`;
+        sfCommand = `sf data search --target-org ${shq(targetOrg)} --query ${shq(query)} --result-format ${shq(resultFormat)}`;
     } else if (file) {
-        sfCommand = `sf data search --target-org ${targetOrg} --file "${file}" --result-format ${resultFormat}`;
+        sfCommand = `sf data search --target-org ${shq(targetOrg)} --file ${shq(file)} --result-format ${shq(resultFormat)}`;
     } else {
         throw new Error("Either query or file must be provided");
     }
