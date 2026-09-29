@@ -3,10 +3,14 @@ import {
     ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
-import { getDefaultOrg } from "../utils/resolveTargetOrg.js";
+import { getDefaultOrgForClient } from "../utils/resolveTargetOrg.js";
 import { listAllOrgs, getOrgInfo } from "../shared/connection.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { shq } from "../utils/shellEscape.js";
+import {
+    maskOrgAuthorization,
+    maskOrgReference,
+} from "../utils/maskIdentifiers.js";
 import {
     executeSobjectList,
     executeSObjectDescribe,
@@ -21,21 +25,23 @@ export async function getAccessibleOrgs() {
 
     if (allowedOrgs === "ALL") return orgs;
 
-    return orgs.filter((org) => {
-        if (permissions.isOrgAllowed(org.username)) return true;
-        if (org.aliases) {
-            return org.aliases.some((alias) => permissions.isOrgAllowed(alias));
-        }
-        return false;
-    });
+    // Plain lookup rather than permissions.isOrgAllowed, which logs every
+    // miss (with the raw username) to the client.
+    return orgs.filter(
+        (org) =>
+            allowedOrgs.includes(org.username) ||
+            (org.aliases?.some((alias) => allowedOrgs.includes(alias)) ??
+                false),
+    );
 }
 
 /**
- * Autocomplete helper for the {alias} URI variable.
+ * Autocomplete helper for the {alias} URI variable. Only aliases are
+ * suggested; usernames are never sent to the client.
  */
 export async function completeAlias(value: string): Promise<string[]> {
     const orgs = await getAccessibleOrgs();
-    const identifiers = orgs.map((org) => org.aliases?.[0] ?? org.username);
+    const identifiers = orgs.flatMap((org) => org.aliases ?? []);
     return identifiers.filter((id) =>
         id.toLowerCase().startsWith(value.toLowerCase()),
     );
@@ -48,12 +54,14 @@ export async function completeAlias(value: string): Promise<string[]> {
 async function validateOrgAccess(alias: string): Promise<string> {
     if (!permissions.isOrgAllowed(alias)) {
         throw new Error(
-            `Access denied: Org '${alias}' is not in the allowed list`,
+            `Access denied: Org '${maskOrgReference(alias)}' is not in the allowed list`,
         );
     }
     // ALLOWED_ORGS defaults to "ALL", so also require an authenticated org.
     if (!(await getOrgInfo(alias))) {
-        throw new Error(`Org '${alias}' is not an authenticated org`);
+        throw new Error(
+            `Org '${maskOrgReference(alias)}' is not an authenticated org`,
+        );
     }
     return alias;
 }
@@ -65,11 +73,17 @@ export function registerResources(server: McpServer) {
         "salesforce://permissions",
         {
             description:
-                "Current server permission settings including read-only mode, allowed orgs, client browser mode, and default org",
+                "Current server permission settings including read-only mode, allowed orgs, client browser mode, and default org (alias only)",
             mimeType: "application/json",
         },
         async () => {
-            const defaultOrg = await getDefaultOrg();
+            // Only the alias (or a masked username) is exposed to the client.
+            const { org: defaultOrg } = await getDefaultOrgForClient();
+            const rawAllowedOrgs = permissions.getAllowedOrgs();
+            const allowedOrgs =
+                rawAllowedOrgs === "ALL"
+                    ? rawAllowedOrgs
+                    : rawAllowedOrgs.map(maskOrgReference);
             return {
                 contents: [
                     {
@@ -77,7 +91,7 @@ export function registerResources(server: McpServer) {
                         mimeType: "application/json",
                         text: JSON.stringify({
                             readOnly: permissions.isReadOnly(),
-                            allowedOrgs: permissions.getAllowedOrgs(),
+                            allowedOrgs,
                             useClientBrowser: permissions.usesClientBrowser(),
                             defaultOrg,
                         }),
@@ -98,13 +112,17 @@ export function registerResources(server: McpServer) {
         }),
         {
             description:
-                "Org metadata summary including org ID, username, instance URL, API version, and available metadata types",
+                "Org metadata summary including masked org ID, username and instance URL, API version, and available metadata types",
             mimeType: "application/json",
         },
         async (_uri, { alias }) => {
             try {
                 const orgAlias = await validateOrgAccess(alias as string);
-                const orgInfo = await getOrgInfo(orgAlias);
+                // Masked like every other surface that reaches the client.
+                const rawOrgInfo = await getOrgInfo(orgAlias);
+                const orgInfo = rawOrgInfo
+                    ? maskOrgAuthorization(rawOrgInfo)
+                    : null;
                 const metadataResult = await executeSfCommand(
                     `sf org list metadata-types --target-org ${shq(orgAlias)} --json`,
                 );

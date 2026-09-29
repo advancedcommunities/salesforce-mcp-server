@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
-import { getDefaultOrg } from "../utils/resolveTargetOrg.js";
+import { getDefaultOrgForClient } from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 
 export const registerAdminTools = (server: McpServer) => {
     server.registerTool(
@@ -16,8 +17,13 @@ export const registerAdminTools = (server: McpServer) => {
             },
         },
         async () => {
-            const allowedOrgs = permissions.getAllowedOrgs();
-            const defaultOrg = await getDefaultOrg();
+            const rawAllowedOrgs = permissions.getAllowedOrgs();
+            const allowedOrgs =
+                rawAllowedOrgs === "ALL"
+                    ? rawAllowedOrgs
+                    : rawAllowedOrgs.map(maskOrgReference);
+            // Only the alias (or a masked username) is exposed to the client.
+            const { org: defaultOrg } = await getDefaultOrgForClient();
             return {
                 content: [
                     {
