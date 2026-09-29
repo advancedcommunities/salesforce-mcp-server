@@ -3,7 +3,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommandRaw } from "../utils/sfCommand.js";
 import { shq } from "../utils/shellEscape.js";
 import { permissions } from "../config/permissions.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 
 const executeSoslQuery = async (
     targetOrg: string,
@@ -125,7 +129,7 @@ export const registerSearchTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -144,7 +148,10 @@ export const registerSearchTools = (server: McpServer) => {
                     content: [
                         {
                             type: "text",
-                            text: JSON.stringify({ targetOrg, ...result }),
+                            text: JSON.stringify({
+                                targetOrg: await toClientOrgLabel(targetOrg),
+                                ...result,
+                            }),
                         },
                     ],
                 };

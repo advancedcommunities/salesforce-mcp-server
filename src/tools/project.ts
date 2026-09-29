@@ -3,7 +3,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
 import { expandPath, shq, splitMultiValue } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 import { requestConfirmation } from "../utils/elicitation.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
@@ -190,7 +194,7 @@ export const registerProjectTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -233,7 +237,10 @@ export const registerProjectTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };

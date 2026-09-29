@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { scrubOrgIdentifiers } from "./maskIdentifiers.js";
 
 type LogLevel =
     | "debug"
@@ -14,8 +15,12 @@ let serverInstance: McpServer | null = null;
 
 function log(level: LogLevel, loggerName: string, data: unknown): void {
     if (!serverInstance) return;
+    // Log messages go to the MCP client, so usernames, org IDs and URLs in
+    // them (e.g. a default org's username in a CLI command) are masked.
+    const safeData =
+        typeof data === "string" ? scrubOrgIdentifiers(data) : data;
     serverInstance
-        .sendLoggingMessage({ level, logger: loggerName, data })
+        .sendLoggingMessage({ level, logger: loggerName, data: safeData })
         .catch(() => {});
 }
 

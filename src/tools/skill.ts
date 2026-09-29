@@ -217,7 +217,7 @@ Resources provide browsable contextual data. Use them to include org information
 
 | Resource | URI | When to Use |
 |---|---|---|
-| Server Permissions | \`salesforce://permissions\` | Check read-only mode, allowed orgs, client browser mode, default org |
+| Server Permissions | \`salesforce://permissions\` | Check read-only mode, allowed orgs, client browser mode, default org (alias only) |
 | Org Metadata | \`salesforce://org/{alias}/metadata\` | Get org summary and available metadata types |
 | Org Objects | \`salesforce://org/{alias}/objects\` | List all SObjects in the org |
 | Object Schema | \`salesforce://org/{alias}/object/{name}\` | Get detailed field/relationship info for an SObject |
@@ -246,6 +246,8 @@ Resources provide browsable contextual data. Use them to include org information
 10. **Don't pass \`targetOrg\` when a default is set** — If \`get_default_org\` returns a value, omit \`targetOrg\` from subsequent calls to keep things clean.
 
 11. **Handle client browser mode** — When \`open\` or \`open_record\` returns \`openInClientBrowser: true\`, the desktop browser was not launched: navigate to the returned \`url\` with your own browser tool. The URL carries a single-use Salesforce login token, so don't echo it back or send it anywhere else. Open one link before asking for the next: Salesforce reuses the same short-lived token for about a minute, so links fetched back to back can share one and later navigations may land on a login page. If the user wants their own browser, call the tool again with \`forceSystemBrowser: true\`. The mode is reported as \`useClientBrowser\` by \`get_server_permissions\` and \`salesforce://permissions\`.
+
+12. **Use aliases, not usernames** — Org identifiers are always masked: \`list_connected_salesforce_orgs\` returns masked usernames (e.g. \`ja***@ex***.com\`), org IDs (e.g. \`00D***********dEAA\`) and instance URLs (e.g. \`https://ac***.my.salesforce.com\`, sandbox \`https://ac***--ua***.sandbox.my.salesforce.com\`) plus a \`note\` field, and \`get_default_org\`, \`get_server_permissions\` and \`salesforce://permissions\` report the default org by alias only. Masked values can't be used as \`targetOrg\`, so pass an org alias instead. If an org (including the default org) has no alias, ask the user to set one (e.g. \`sf alias set myOrg=<username>\`).
 `;
 
 export const registerSkillTools = (server: McpServer) => {

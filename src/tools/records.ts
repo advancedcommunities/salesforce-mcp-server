@@ -1,7 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { permissions } from "../config/permissions.js";
 import { getOrgInfo, getOrgAccessToken } from "../shared/connection.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 import { requestConfirmation } from "../utils/elicitation.js";
 import {
     shouldUseClientBrowser,
@@ -71,7 +75,7 @@ const createSuccessResponse = (
 const checkOrgPermissions = (targetOrg: string): McpResponse | null => {
     if (!permissions.isOrgAllowed(targetOrg)) {
         return createErrorResponse(
-            `Access to org '${targetOrg}' is not allowed`,
+            `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
         );
     }
     return null;
@@ -169,7 +173,11 @@ const executeSalesforceRestApi = async (
             if (response.ok) {
                 return createSuccessResponse(
                     `Successfully created ${sObject} record`,
-                    { targetOrg, id: result.id, result },
+                    {
+                        targetOrg: await toClientOrgLabel(targetOrg),
+                        id: result.id,
+                        result,
+                    },
                 );
             } else {
                 return createErrorResponse(
@@ -182,7 +190,10 @@ const executeSalesforceRestApi = async (
                 const action = method === "PATCH" ? "updated" : "deleted";
                 return createSuccessResponse(
                     `Successfully ${action} ${sObject} record`,
-                    { targetOrg, id: recordId },
+                    {
+                        targetOrg: await toClientOrgLabel(targetOrg),
+                        id: recordId,
+                    },
                 );
             } else {
                 const result = await response.json();
@@ -331,7 +342,7 @@ export const registerOrgTools = (server: McpServer) => {
                         `record ${recordId}`,
                     );
                     return createSuccessResponse(message, {
-                        targetOrg,
+                        targetOrg: await toClientOrgLabel(targetOrg),
                         recordId,
                         ...details,
                     });
@@ -347,7 +358,7 @@ export const registerOrgTools = (server: McpServer) => {
             try {
                 const result = await openRecordInBrowser(targetOrg, recordId);
                 return createSuccessResponse(result.message, {
-                    targetOrg,
+                    targetOrg: await toClientOrgLabel(targetOrg),
                     url: result.url,
                 });
             } catch (error) {
