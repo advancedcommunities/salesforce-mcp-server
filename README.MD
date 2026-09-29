@@ -15,7 +15,7 @@ Salesforce MCP Server is a Model Context Protocol (MCP) server that enables AI a
 
 #### Prerequisites
 
-- [Node.js (v18 or higher)](https://nodejs.org/en/download)
+- [Node.js (v22 or higher)](https://nodejs.org/en/download)
 - [Salesforce CLI (`sf`) installed and configured](https://developer.salesforce.com/tools/salesforcecli)
 - At least one authenticated Salesforce org
 
