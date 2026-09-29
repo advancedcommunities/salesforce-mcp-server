@@ -144,13 +144,16 @@ To be able to run the MCP Server – you need a client. The client can be any AI
 
     # Both restrictions (user scope)
     claude mcp add --scope user salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server -e READ_ONLY=true -e ALLOWED_ORGS=production
+
+    # Open orgs and records in the client's built-in browser (user scope)
+    claude mcp add --scope user salesforce-mcp-server npx @advanced-communities/salesforce-mcp-server -e USE_CLIENT_BROWSER=true
     ```
 
     > **Note**: By default, Claude Code installs MCP servers in local scope (current directory). Use `--scope user` to install globally for all projects.
 
 #### Claude Code Skill
 
-The server includes an `install_skill` tool that adds a Salesforce-specific skill to Claude Code. The skill teaches Claude how to effectively use all 41 tools, 5 prompts, and 5 resources together — including tool selection guidance, workflow patterns, and common pitfalls to avoid.
+The server includes an `install_skill` tool that adds a Salesforce-specific skill to Claude Code. The skill teaches Claude how to effectively use all 40 tools, 5 prompts, and 5 resources together — including tool selection guidance, workflow patterns, and common pitfalls to avoid.
 
 **Automatic installation**: Claude can call the `install_skill` tool when working on Salesforce tasks. You can also ask Claude directly: "Install the Salesforce skill."
 
@@ -173,6 +176,7 @@ args = ["@advanced-communities/salesforce-mcp-server"]
 [mcp_servers.salesforce-mcp-server.env]
 READ_ONLY = "true"
 ALLOWED_ORGS = "dev,qa,staging"
+USE_CLIENT_BROWSER = "true"
 ```
 
 #### Use it with VS Code
@@ -248,8 +252,43 @@ The server supports the following environment variables for access control:
 - `READ_ONLY=true` - Prevents execution of Apex code (anonymous execution and tests)
 - `ALLOWED_ORGS=ALL` - Allow access to all orgs (default)
 - `ALLOWED_ORGS=org1,org2,org3` - Restrict access to specific org aliases
+- `USE_CLIENT_BROWSER=true` - Hand org and record URLs to the AI client's built-in browser instead of launching your desktop browser (default: `false`)
 
 When ALLOWED_ORGS is set, the `list_connected_salesforce_orgs` tool will only show orgs that match the allowed list.
+
+### Use Client's Built-in Browser
+
+Some AI clients ship their own browser. Set `USE_CLIENT_BROWSER=true` to keep Salesforce inside that browser instead of popping open your desktop one. Verified with the Claude Cowork and ChatGPT desktop apps; it also works with any client that has a browser tool attached, such as the Chrome DevTools or Playwright MCP servers.
+
+```json
+{
+    "mcpServers": {
+        "salesforce-mcp-server": {
+            "command": "npx",
+            "args": ["@advanced-communities/salesforce-mcp-server"],
+            "env": {
+                "USE_CLIENT_BROWSER": "true"
+            }
+        }
+    }
+}
+```
+
+In MCPB installs the same option appears as the **Use Client's Built-in Browser** checkbox in the extension settings.
+
+What changes when it is enabled:
+
+- `open` and `open_record` no longer launch a browser. They return a pre-authenticated Salesforce URL (generated with `sf org open --url-only`) together with `openInClientBrowser: true`, so the assistant can navigate to it with its own browser tool.
+- The server advertises the mode in its MCP `instructions`, which clients surface to the assistant, so it knows to open the returned URL rather than print it.
+- `open` and `open_record` accept `forceSystemBrowser: true` to launch your desktop browser for that one call.
+- Passing `browser` or `privateMode` to `open` counts as asking for your desktop browser, so the org opens there even while the mode is active — neither option means anything to the client's browser.
+- `login_into_org` is unaffected — the Salesforce CLI OAuth flow always uses your desktop browser.
+
+The returned URL contains a single-use Salesforce login token minted by Salesforce (`/services/oauth2/singleaccess`) and valid for up to one minute. It logs whoever opens it into the org as you, so treat it like a credential: it is meant for the client's browser tool, not for chat logs or third parties.
+
+Open one link before asking for the next. Salesforce caches the token for the life of that minute, so URLs generated back to back can carry the **same** token with different destinations, and navigating several in quick succession may drop the browser on a login page instead of the record you asked for. Once the first link has signed the browser in, that session carries the login — ordinary Salesforce URLs work from then on without a token.
+
+Client browser mode is reported by the `get_server_permissions` tool and the `salesforce://permissions` resource as `useClientBrowser`.
 
 ### Default Org
 
@@ -326,7 +365,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 41 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 40 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
 
 ### Available Tools
 
@@ -583,7 +622,7 @@ Log out of a Salesforce org, removing stored authentication.
 
 #### 26. Open
 
-Open a Salesforce org in your browser.
+Open a Salesforce org in your browser. With `USE_CLIENT_BROWSER=true` it returns a pre-authenticated URL for the client's built-in browser instead; pass `forceSystemBrowser: true` to launch your desktop browser anyway.
 
 **Example prompts:**
 
@@ -592,10 +631,11 @@ Open a Salesforce org in your browser.
 - "Open my org in private/incognito mode"
 - "Open a Visualforce page /apex/MyPage in production"
 - "Open my FlexiPage in Lightning App Builder"
+- "Open my dev org in my own browser, not yours"
 
 #### 27. Open Record
 
-Open a specific Salesforce record in the browser.
+Open a specific Salesforce record in the browser. With `USE_CLIENT_BROWSER=true` it returns a pre-authenticated URL for the client's built-in browser instead; pass `forceSystemBrowser: true` to launch your desktop browser anyway.
 
 **Example prompts:**
 
@@ -735,17 +775,7 @@ Clear the default target org from the Salesforce CLI configuration. After cleari
 - "Remove the default target org setting"
 - "Unset my default org"
 
-#### 40. Generate Frontdoor URL
-
-Generate an authenticated Salesforce frontdoor URL that allows seamless browser login without re-entering credentials. Useful for browser automation tools (e.g. Playwright) that need to open an authenticated Salesforce session programmatically.
-
-**Example prompts:**
-
-- "Generate a frontdoor URL for my dev org"
-- "Get a frontdoor login URL for sandbox1 pointing to the home page"
-- "Create an authenticated URL for my org redirecting to /lightning/page/home"
-
-#### 41. Install Skill
+#### 40. Install Skill
 
 Install the Salesforce MCP Server skill for Claude Code, providing domain-specific guidance on tool usage, workflows, and best practices.
 
@@ -924,6 +954,7 @@ Clients that support the MCP `outputSchema` capability will receive validated st
 ### Security Considerations
 
 - The server executes commands with the permissions of the authenticated Salesforce user
+- While client browser mode is enabled, `open` and `open_record` return URLs that contain a one-time Salesforce login token — whoever opens one first is logged in as you, so keep them out of shared logs and tickets
 - Be cautious when executing DML operations in production orgs
 - Review Apex code before execution, especially in production environments
 - Consider using sandbox orgs for testing and development

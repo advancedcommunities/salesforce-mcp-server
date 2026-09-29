@@ -28,6 +28,11 @@
                     "name": "ALLOWED_ORGS",
                     "description": "Comma-separated list of allowed org aliases, or 'ALL' to allow access to all authenticated orgs",
                     "default": "ALL"
+                },
+                {
+                    "name": "USE_CLIENT_BROWSER",
+                    "description": "When set to 'true', the 'open' and 'open_record' tools return a pre-authenticated Salesforce URL for the client's built-in browser instead of launching the desktop browser",
+                    "default": "false"
                 }
             ]
         }

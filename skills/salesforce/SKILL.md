@@ -15,7 +15,7 @@ Before doing anything else, determine the target org and check permissions.
 
 1. **Get the default org** — call `get_default_org`. If a default is set, you can omit `targetOrg` from all subsequent calls.
 2. **List connected orgs** — call `list_connected_salesforce_orgs` if the user hasn't specified which org to use.
-3. **Check permissions** — call `get_server_permissions` to see if the server is in read-only mode and which orgs are allowed.
+3. **Check permissions** — call `get_server_permissions` to see if the server is in read-only mode, which orgs are allowed, and whether client browser mode is on.
 4. **Set a default** — if the user picks an org, call `set_default_org` so future calls don't need `targetOrg`.
 
 > **Rule**: Never guess the org. Always resolve it first.
@@ -210,13 +210,13 @@ Use prompts for guided multi-step workflows. They fetch live org data and provid
 
 Resources provide browsable contextual data. Use them to include org information in your context.
 
-| Resource           | URI                                      | When to Use                                         |
-| ------------------ | ---------------------------------------- | --------------------------------------------------- |
-| Server Permissions | `salesforce://permissions`               | Check read-only mode, allowed orgs, default org     |
-| Org Metadata       | `salesforce://org/{alias}/metadata`      | Get org summary and available metadata types        |
-| Org Objects        | `salesforce://org/{alias}/objects`       | List all SObjects in the org                        |
-| Object Schema      | `salesforce://org/{alias}/object/{name}` | Get detailed field/relationship info for an SObject |
-| Org Limits         | `salesforce://org/{alias}/limits`        | Check API limits and usage                          |
+| Resource           | URI                                      | When to Use                                                          |
+| ------------------ | ---------------------------------------- | -------------------------------------------------------------------- |
+| Server Permissions | `salesforce://permissions`               | Check read-only mode, allowed orgs, client browser mode, default org |
+| Org Metadata       | `salesforce://org/{alias}/metadata`      | Get org summary and available metadata types                         |
+| Org Objects        | `salesforce://org/{alias}/objects`       | List all SObjects in the org                                         |
+| Object Schema      | `salesforce://org/{alias}/object/{name}` | Get detailed field/relationship info for an SObject                  |
+| Org Limits         | `salesforce://org/{alias}/limits`        | Check API limits and usage                                           |
 
 ## Critical Pitfalls
 
@@ -239,3 +239,5 @@ Resources provide browsable contextual data. Use them to include org information
 9. **Check test coverage before deploying** — Salesforce requires >= 75% code coverage for production deployments. Use `get_apex_code_coverage` to verify.
 
 10. **Don't pass `targetOrg` when a default is set** — If `get_default_org` returns a value, omit `targetOrg` from subsequent calls to keep things clean.
+
+11. **Handle client browser mode** — When `open` or `open_record` returns `openInClientBrowser: true`, the desktop browser was not launched: navigate to the returned `url` with your own browser tool. The URL carries a single-use Salesforce login token, so don't echo it back or send it anywhere else. Open one link before asking for the next: Salesforce reuses the same short-lived token for about a minute, so links fetched back to back can share one and later navigations may land on a login page. If the user wants their own browser, call the tool again with `forceSystemBrowser: true`. The mode is reported as `useClientBrowser` by `get_server_permissions` and `salesforce://permissions`.

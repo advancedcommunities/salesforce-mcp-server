@@ -9,6 +9,11 @@ import {
     clearDefaultOrgCache,
 } from "../utils/resolveTargetOrg.js";
 import { requestConfirmation } from "../utils/elicitation.js";
+import {
+    shouldUseClientBrowser,
+    buildOrgUrl,
+    clientBrowserResult,
+} from "../utils/clientBrowser.js";
 import z from "zod";
 
 /**
@@ -250,28 +255,6 @@ const openOrg = async (
     } catch (error) {
         throw error;
     }
-};
-
-const generateFrontdoorUrl = async (
-    targetOrg: string,
-    retURL: string = "/",
-) => {
-    const sfCommand = `sf org display --target-org ${shq(targetOrg)} --json`;
-    const result = await executeSfCommand(sfCommand);
-
-    const instanceUrl = result?.result?.instanceUrl;
-    const accessToken = result?.result?.accessToken;
-
-    if (!instanceUrl || !accessToken) {
-        throw new Error(
-            `Could not retrieve instanceUrl or accessToken for org '${targetOrg}'. Ensure the org is authenticated.`,
-        );
-    }
-
-    const encodedRetURL = encodeURIComponent(retURL);
-    const frontdoorUrl = `${instanceUrl}/secur/frontdoor.jsp?sid=${accessToken}&retURL=${encodedRetURL}`;
-
-    return { frontdoorUrl, instanceUrl, targetOrg };
 };
 
 export const registerOrgTools = (server: McpServer) => {
@@ -994,7 +977,10 @@ export const registerOrgTools = (server: McpServer) => {
         "open",
         {
             description:
-                "Open your Salesforce org in a browser. To open a specific page, specify the portion of the URL after 'https://mydomain.my.salesforce.com' as the path value. Use sourceFile to open ApexPage, FlexiPage, Flow, or Agent metadata from your local project in the associated Builder.",
+                "Open your Salesforce org in a browser. To open a specific page, specify the portion of the URL after 'https://mydomain.my.salesforce.com' as the path value. Use sourceFile to open ApexPage, FlexiPage, Flow, or Agent metadata from your local project in the associated Builder." +
+                (permissions.usesClientBrowser()
+                    ? " Client browser mode is enabled: instead of launching the desktop browser, this tool returns a pre-authenticated URL that you should open with your own built-in browser tool. Pass forceSystemBrowser: true to launch the user's desktop browser instead; passing browser or privateMode does the same, since those options only apply to the desktop browser."
+                    : ""),
             inputSchema: {
                 input: z.object({
                     targetOrg: z
@@ -1025,6 +1011,12 @@ export const registerOrgTools = (server: McpServer) => {
                         .describe(
                             "Path to ApexPage, FlexiPage, Flow, or Agent metadata to open in the associated Builder.",
                         ),
+                    forceSystemBrowser: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Launch the user's desktop browser even when client browser mode is enabled. Use when the user explicitly asks for their own browser (e.g. to reuse an existing session or extensions).",
+                        ),
                 }),
             },
             annotations: {
@@ -1052,7 +1044,13 @@ export const registerOrgTools = (server: McpServer) => {
                 };
             }
 
-            const { path, browser, privateMode, sourceFile } = input;
+            const {
+                path,
+                browser,
+                privateMode,
+                sourceFile,
+                forceSystemBrowser,
+            } = input;
 
             if (!permissions.isOrgAllowed(targetOrg)) {
                 return {
@@ -1068,21 +1066,112 @@ export const registerOrgTools = (server: McpServer) => {
                 };
             }
 
-            const result = await openOrg(
-                targetOrg,
-                path,
-                browser,
-                privateMode,
-                sourceFile,
+            // The CLI declares --path and --source-file mutually exclusive;
+            // catch it here so the caller gets a usable message.
+            if (path && sourceFile) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                targetOrg,
+                                message:
+                                    "Provide either path or sourceFile, not both — the Salesforce CLI rejects the combination.",
+                            }),
+                        },
+                    ],
+                };
+            }
+
+            // browser and privateMode are requests for a specific desktop
+            // browser window, so treat them as an opt-out of client browser
+            // mode rather than dropping the user's intent.
+            const desktopRequested = Boolean(
+                forceSystemBrowser || browser || privateMode,
             );
-            return {
-                content: [
-                    {
-                        type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
-                    },
-                ],
-            };
+
+            // Hand the URL to the client's built-in browser instead of
+            // launching the desktop browser when the setting is enabled.
+            if (shouldUseClientBrowser(desktopRequested)) {
+                try {
+                    const url = await buildOrgUrl(targetOrg, {
+                        path,
+                        sourceFile,
+                    });
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: true,
+                                    targetOrg,
+                                    ...clientBrowserResult(
+                                        url,
+                                        `org '${targetOrg}'`,
+                                    ),
+                                }),
+                            },
+                        ],
+                    };
+                } catch (error: any) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify({
+                                    success: false,
+                                    targetOrg,
+                                    message: error.message,
+                                }),
+                            },
+                        ],
+                    };
+                }
+            }
+
+            const usedDesktopFallback =
+                permissions.usesClientBrowser() && !forceSystemBrowser;
+
+            try {
+                const result = await openOrg(
+                    targetOrg,
+                    path,
+                    browser,
+                    privateMode,
+                    sourceFile,
+                );
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                targetOrg,
+                                ...(usedDesktopFallback
+                                    ? {
+                                          systemBrowserReason:
+                                              "browser and privateMode only work in the desktop browser, so the org was opened there despite client browser mode",
+                                      }
+                                    : {}),
+                                ...result,
+                            }),
+                        },
+                    ],
+                };
+            } catch (error: any) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                targetOrg,
+                                message: error.message,
+                            }),
+                        },
+                    ],
+                };
+            }
         },
     );
 
@@ -1218,95 +1307,6 @@ export const registerOrgTools = (server: McpServer) => {
                                 message:
                                     error.message ||
                                     "Failed to set default target org",
-                            }),
-                        },
-                    ],
-                };
-            }
-        },
-    );
-
-    server.registerTool(
-        "generate_frontdoor_url",
-        {
-            description:
-                "Generate an authenticated Salesforce frontdoor URL that allows seamless browser login without re-entering credentials. The URL uses the format: {instanceUrl}/secur/frontdoor.jsp?sid={accessToken}&retURL={retURL}. This is useful for programmatic browser automation tools such as the Playwright MCP and Chrome DevTools MCP that need to open an authenticated Salesforce session.",
-            inputSchema: {
-                input: z.object({
-                    targetOrg: z
-                        .string()
-                        .optional()
-                        .describe(
-                            "Username or alias of the target org. If not provided, uses the default org from SF CLI configuration.",
-                        ),
-                    retURL: z
-                        .string()
-                        .optional()
-                        .describe(
-                            "Relative URL to redirect to after login (e.g. '/lightning/page/home'). Defaults to '/'.",
-                        ),
-                }),
-            },
-            annotations: {
-                readOnlyHint: true,
-                destructiveHint: false,
-                idempotentHint: false,
-                openWorldHint: true,
-            },
-        },
-        async ({ input }) => {
-            let targetOrg: string;
-            try {
-                targetOrg = await resolveTargetOrg(input.targetOrg);
-            } catch (error: any) {
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: JSON.stringify({
-                                success: false,
-                                message: error.message,
-                            }),
-                        },
-                    ],
-                };
-            }
-
-            if (!permissions.isOrgAllowed(targetOrg)) {
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: JSON.stringify({
-                                success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
-                            }),
-                        },
-                    ],
-                };
-            }
-
-            try {
-                const result = await generateFrontdoorUrl(
-                    targetOrg,
-                    input.retURL,
-                );
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: JSON.stringify({ success: true, ...result }),
-                        },
-                    ],
-                };
-            } catch (error: any) {
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: JSON.stringify({
-                                success: false,
-                                message: error.message,
                             }),
                         },
                     ],

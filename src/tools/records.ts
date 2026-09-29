@@ -3,6 +3,11 @@ import { permissions } from "../config/permissions.js";
 import { getOrgInfo, getOrgAccessToken } from "../shared/connection.js";
 import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
 import { requestConfirmation } from "../utils/elicitation.js";
+import {
+    shouldUseClientBrowser,
+    buildOrgUrl,
+    clientBrowserResult,
+} from "../utils/clientBrowser.js";
 import { exec } from "node:child_process";
 import { platform } from "node:os";
 import { shq } from "../utils/shellEscape.js";
@@ -260,7 +265,11 @@ export const registerOrgTools = (server: McpServer) => {
     server.registerTool(
         "open_record",
         {
-            description: "Opens a Salesforce record in a browser.",
+            description:
+                "Opens a Salesforce record in a browser." +
+                (permissions.usesClientBrowser()
+                    ? " Client browser mode is enabled: instead of launching the desktop browser, this tool returns a pre-authenticated URL that you should open with your own built-in browser tool. Pass forceSystemBrowser: true to launch the user's desktop browser instead."
+                    : ""),
             inputSchema: {
                 input: z.object({
                     targetOrg: z
@@ -272,6 +281,12 @@ export const registerOrgTools = (server: McpServer) => {
                     recordId: z
                         .string()
                         .describe("Id of the Salesforce record to open"),
+                    forceSystemBrowser: z
+                        .boolean()
+                        .optional()
+                        .describe(
+                            "Launch the user's desktop browser even when client browser mode is enabled. Use when the user explicitly asks for their own browser (e.g. to reuse an existing session or extensions).",
+                        ),
                 }),
             },
             annotations: {
@@ -289,7 +304,7 @@ export const registerOrgTools = (server: McpServer) => {
                 return createErrorResponse(error.message);
             }
 
-            const { recordId } = input;
+            const { recordId, forceSystemBrowser } = input;
 
             if (!recordId || recordId.trim() === "") {
                 return createErrorResponse("Salesforce record Id is required");
@@ -303,6 +318,31 @@ export const registerOrgTools = (server: McpServer) => {
 
             const permissionError = checkOrgPermissions(targetOrg);
             if (permissionError) return permissionError;
+
+            // Hand the URL to the client's built-in browser instead of
+            // launching the desktop browser when the setting is enabled.
+            if (shouldUseClientBrowser(forceSystemBrowser)) {
+                try {
+                    const url = await buildOrgUrl(targetOrg, {
+                        path: `/${recordId.trim()}`,
+                    });
+                    const { message, ...details } = clientBrowserResult(
+                        url,
+                        `record ${recordId}`,
+                    );
+                    return createSuccessResponse(message, {
+                        targetOrg,
+                        recordId,
+                        ...details,
+                    });
+                } catch (error) {
+                    return createErrorResponse(
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to generate a record URL",
+                    );
+                }
+            }
 
             try {
                 const result = await openRecordInBrowser(targetOrg, recordId);
