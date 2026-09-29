@@ -1,4 +1,5 @@
 import { logger } from "../utils/logger.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 
 interface PermissionConfig {
     readOnly: boolean;
@@ -33,7 +34,7 @@ class PermissionsManager {
         if (!allowed) {
             logger.warning(
                 "permissions",
-                `Access denied for org '${targetOrg}'`,
+                `Access denied for org '${maskOrgReference(targetOrg)}'`,
             );
         }
         return allowed;

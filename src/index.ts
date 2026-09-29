@@ -25,6 +25,7 @@ import { initLogger, logger } from "./utils/logger.js";
 import { initElicitation } from "./utils/elicitation.js";
 import { applySchemaDialectFix } from "./utils/schemaDialect.js";
 import { buildBrowserInstructions } from "./utils/clientBrowser.js";
+import { maskOrgReference } from "./utils/maskIdentifiers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -55,7 +56,9 @@ function buildServerDescription(): string {
     }
 
     if (allowedOrgs !== "ALL") {
-        permissionInfo.push(`Access restricted to: ${allowedOrgs.join(", ")}`);
+        permissionInfo.push(
+            `Access restricted to: ${allowedOrgs.map(maskOrgReference).join(", ")}`,
+        );
     }
 
     if (permissions.usesClientBrowser()) {
