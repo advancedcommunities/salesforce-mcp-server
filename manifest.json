@@ -5,7 +5,7 @@
     "version": "1.6.7",
     "description": "Salesforce MCP Server - Interact with Salesforce orgs through AI assistants",
     "icon": "icon.png",
-    "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)\n- USE_CLIENT_BROWSER=true - Returns a pre-authenticated URL for the AI client's built-in browser instead of launching your desktop browser",
+    "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)\n- USE_CLIENT_BROWSER=true - Returns a pre-authenticated URL for the AI client's built-in browser instead of launching your desktop browser\n\nUsernames, org IDs and instance URLs are always masked before reaching the AI client; the default org is reported by alias only.",
     "author": {
         "name": "Advanced Communities",
         "url": "https://advancedcommunities.com"
@@ -66,7 +66,7 @@
         },
         {
             "name": "list_connected_salesforce_orgs",
-            "description": "List connected Salesforce Orgs"
+            "description": "List connected Salesforce Orgs (usernames, org IDs and instance URLs are masked)"
         },
         {
             "name": "query_records",
@@ -122,7 +122,7 @@
         },
         {
             "name": "display_user",
-            "description": "Display information about a Salesforce user"
+            "description": "Display information about a Salesforce user (username, org ID and instance URL are masked)"
         },
         {
             "name": "list_metadata",
@@ -198,7 +198,7 @@
         },
         {
             "name": "get_default_org",
-            "description": "Get the current default target org configured in the Salesforce CLI"
+            "description": "Get the alias of the current default target org configured in the Salesforce CLI (usernames are never returned)"
         },
         {
             "name": "set_default_org",

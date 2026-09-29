@@ -256,6 +256,35 @@ The server supports the following environment variables for access control:
 
 When ALLOWED_ORGS is set, the `list_connected_salesforce_orgs` tool will only show orgs that match the allowed list.
 
+### Org Identifier Masking
+
+Org identifiers are always masked before they reach the AI client; there is nothing to configure. `list_connected_salesforce_orgs` returns:
+
+- Usernames partially masked, e.g. `jane.doe@example.com` becomes `ja***@ex***.com` (sandbox suffixes such as `.uat` are kept as the last label)
+- Org IDs with only the `00D` prefix and last 4 characters visible, e.g. `00D***********dEAA`
+- Instance URLs with the scheme and Salesforce domain suffix kept and the My Domain part masked, e.g. `https://acme.my.salesforce.com` becomes `https://ac***.my.salesforce.com`. Sandbox My Domains mask the company and sandbox names separately, e.g. `https://acme--uat.sandbox.my.salesforce.com` becomes `https://ac***--ua***.sandbox.my.salesforce.com`. Suffixes such as `.develop.my.salesforce.com`, `.scratch.my.salesforce.com` and `.lightning.force.com` are kept; for unknown hosts only the leftmost label is masked. Paths and query strings are dropped.
+- A `note` field reminding the assistant to use aliases as `targetOrg`, since masked usernames cannot be used to target an org
+
+Aliases, `isDevHub` and `apiVersion` are not masked. Production/sandbox/scratch categorization is done on the raw values before masking.
+
+The default org is reported by alias only. `get_default_org`, the `defaultOrg` field of `get_server_permissions` and the `salesforce://permissions` resource return the alias of the CLI's `target-org`, even when it's configured as a username (the org's first alias is used). If the default org has no alias, they return a masked username and `get_default_org` asks you to set an alias. Usernames, org IDs and instance URLs of the default org are never returned. Tools still run against the real default org.
+
+When a tool runs against the default org, the `targetOrg` it echoes back (in text and structured output), its access-denied message and the prompts' text use the same alias-only form, never the raw username.
+
+Other places identifiers are masked:
+
+- `login_into_org`, `logout`, `open` (desktop browser mode) and `display_user` mask the username, org ID and instance/login URLs in the CLI result. `open` in desktop mode also drops the path and login token from the returned URL, since the browser is already open. In client browser mode, `open` and `open_record` still return the real pre-authenticated URL, because the client's browser needs it.
+- The `salesforce://org/{alias}/metadata` resource and the `org_health_check` prompt return masked usernames, org IDs and instance URLs.
+- Usernames listed in `ALLOWED_ORGS` are masked in the tool's `permissionMessage`, in the server description, in access-denied messages, and in the `allowedOrgs` value returned by `get_server_permissions` and the `salesforce://permissions` resource.
+- Error messages from `list_connected_salesforce_orgs` and MCP log notifications (for example the CLI commands the server runs) are scrubbed of usernames, org IDs and URLs.
+- Resource alias completions suggest aliases only.
+
+Orgs without an alias can't be targeted by the assistant, so set one first:
+
+```bash
+sf alias set myOrg=user@example.com
+```
+
 ### Use Client's Built-in Browser
 
 Some AI clients ship their own browser. Set `USE_CLIENT_BROWSER=true` to keep Salesforce inside that browser instead of popping open your desktop one. Verified with the Claude Cowork and ChatGPT desktop apps; it also works with any client that has a browser tool attached, such as the Chrome DevTools or Playwright MCP servers.
@@ -308,7 +337,7 @@ sf config get target-org
 
 When a default org is configured, you can use any tool without specifying `targetOrg` — the server will use the default automatically. If no `targetOrg` is provided and no default org is configured, the tool will return an error asking you to either provide `targetOrg` or set a default.
 
-You can check the current default org via the `get_server_permissions` tool, which includes it in its response.
+You can check the current default org via the `get_server_permissions` tool, which includes its alias in its response.
 
 ### Permission Examples
 
@@ -371,7 +400,7 @@ Once the SF MCP Server is configured in your AI client, you can interact with Sa
 
 #### 1. List Connected Salesforce Orgs
 
-View all Salesforce orgs currently authenticated with the Salesforce CLI.
+View all Salesforce orgs currently authenticated with the Salesforce CLI. Usernames, org IDs and instance URLs are masked (see [Org Identifier Masking](#org-identifier-masking)).
 
 **Example prompts:**
 
@@ -747,7 +776,7 @@ Deploy metadata components to a Salesforce org with various configuration option
 
 #### 37. Get Default Org
 
-Get the current default target org configured in the Salesforce CLI. This is the org used automatically when no `targetOrg` is specified.
+Get the alias of the current default target org configured in the Salesforce CLI. This is the org used automatically when no `targetOrg` is specified. Only the alias is returned; if the default org has no alias, a masked username is returned with a prompt to set one (`sf alias set <alias>=<username>`).
 
 **Example prompts:**
 
@@ -918,7 +947,7 @@ The following tools support MCP structured output (`outputSchema` + `structuredC
 - `query_records` — returns `{ targetOrg, records }`
 - `sobject_list` — returns `{ targetOrg, sobjects }`
 - `sobject_describe` — returns `{ targetOrg, name, label, fields, childRelationships, recordTypeInfos, ... }`
-- `list_connected_salesforce_orgs` — returns `{ devHubOrgs, production, sandboxes, scratchOrgs, totalOrgs }`
+- `list_connected_salesforce_orgs` — returns `{ devHubOrgs, production, sandboxes, scratchOrgs, totalOrgs, permissionMessage?, note }` (usernames, org IDs and instance URLs always masked)
 - `get_apex_test_results` — returns `{ targetOrg, summary, tests, codecoverage }`
 
 Clients that support the MCP `outputSchema` capability will receive validated structured data in addition to the text content. All tool schemas are advertised with the JSON Schema 2020-12 dialect so that clients validating `outputSchema` with a 2020-12-only validator accept them.
