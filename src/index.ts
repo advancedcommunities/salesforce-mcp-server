@@ -30,7 +30,7 @@ import { maskOrgReference } from "./utils/maskIdentifiers.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** Single source of truth for the server version; keep in sync with package.json */
-const SERVER_VERSION = "1.6.7";
+const SERVER_VERSION = "1.7.0";
 
 function loadServerIcon(): string | undefined {
     const iconPath = join(__dirname, "..", "icon.png");

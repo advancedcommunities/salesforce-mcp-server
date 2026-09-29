@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-09-29
+
+### Added
+
+- **Org Identifier Masking**: All usernames, org IDs, and instance URLs are now masked before reaching the AI client
+    - Usernames are partially masked (e.g., `jane.doe@example.com` → `ja***@ex***.com`)
+    - Org IDs show only prefix and last 4 characters (e.g., `00D***********dEAA`)
+    - Instance URLs mask the MyDomain part while preserving scheme and suffix
+    - Default org reported by alias only; users are prompted to set aliases for orgs without them
+    - Applies to all org-related tools, resources, prompts, and log messages
+
+- **Client Browser Mode**: New `USE_CLIENT_BROWSER=true` environment variable for AI clients with built-in browsers
+    - `open` and `open_record` tools now return pre-authenticated Salesforce URLs instead of launching desktop browser
+    - URLs are generated with single-use Salesforce login tokens valid for up to one minute
+    - Clients like Claude Desktop and ChatGPT can navigate these URLs using their browser tools
+    - `forceSystemBrowser: true` parameter lets users override and use desktop browser for specific calls
+    - Client browser mode status reported via `get_server_permissions` tool and `salesforce://permissions` resource
+
+### Changed
+
+- **generate_frontdoor_url Tool Removed**: Superseded by client browser mode functionality
+    - The `open` and `open_record` tools now provide the same pre-authenticated URL capability with better integration
+    - Users migrating from `generate_frontdoor_url` should use `open` with `USE_CLIENT_BROWSER=true` environment variable
+
+- **Dependency Updates**: Upgraded @salesforce/apex-node to v9 for better stability and security
+
+### Fixed
+
+- **Shell Command Injection Vulnerability**: Fixed critical security issue with shell argument escaping
+    - All interpolated values in Salesforce CLI commands are now properly escaped before execution
+    - Prevents potential command injection through specially crafted org aliases, field names, or other parameters
+    - Includes platform-aware escaping for Windows, macOS, and Linux
+    - Added comprehensive test suite for shell escaping safety
+
+### Security
+
+- Org identifiers are masked before reaching AI clients, improving privacy and security
+- Command injection prevention ensures CLI arguments cannot escape the shell
+- All destructive operations continue to require user confirmation via elicitation
+
 ## [1.6.7] - 2026-09-16
 
 ### Fixed
