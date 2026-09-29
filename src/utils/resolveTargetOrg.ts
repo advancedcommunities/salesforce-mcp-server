@@ -1,4 +1,9 @@
 import { executeSfCommand } from "./sfCommand.js";
+import { listAllOrgs, type OrgAuthorization } from "../shared/connection.js";
+import {
+    toClientOrgReference,
+    type ClientOrgReference,
+} from "./maskIdentifiers.js";
 
 let cachedDefaultOrg: string | null = null;
 let cacheTimestamp: number = 0;
@@ -20,7 +25,9 @@ export async function resolveTargetOrg(targetOrg?: string): Promise<string> {
     }
 
     try {
-        const result = await executeSfCommand("sf config get target-org --json");
+        const result = await executeSfCommand(
+            "sf config get target-org --json",
+        );
 
         const value = result?.result?.[0]?.value;
         if (value && typeof value === "string" && value.trim() !== "") {
@@ -58,7 +65,9 @@ export async function getDefaultOrg(): Promise<string | null> {
     }
 
     try {
-        const result = await executeSfCommand("sf config get target-org --json");
+        const result = await executeSfCommand(
+            "sf config get target-org --json",
+        );
 
         const value = result?.result?.[0]?.value;
         if (value && typeof value === "string" && value.trim() !== "") {
@@ -71,4 +80,41 @@ export async function getDefaultOrg(): Promise<string | null> {
     }
 
     return null;
+}
+
+/**
+ * Get the default org in a form that is safe to return to the AI client:
+ * its alias when one exists, otherwise a masked username plus a hint to set
+ * an alias. Never exposes the raw username, org ID or instance URL. Tools that
+ * run commands must keep using resolveTargetOrg()/getDefaultOrg().
+ */
+export async function getDefaultOrgForClient(): Promise<ClientOrgReference> {
+    const value = await getDefaultOrg();
+    if (!value) return { org: null, isAlias: false };
+
+    return toClientOrgReference(value, await tryListAllOrgs());
+}
+
+/**
+ * Lists authenticated orgs, returning null (instead of throwing) when the
+ * list can't be read, e.g. because of a corrupt auth file or keychain error.
+ */
+const tryListAllOrgs = async (): Promise<OrgAuthorization[] | null> => {
+    try {
+        return await listAllOrgs();
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Converts a resolved target org (from resolveTargetOrg) into a label that is
+ * safe to echo back to the AI client. Aliases are returned unchanged without
+ * any lookup; a username is replaced with its first alias, or masked when it
+ * has none. Use it for every `targetOrg` field or message sent to the client;
+ * keep passing the raw value to CLI commands.
+ */
+export async function toClientOrgLabel(org: string): Promise<string> {
+    if (!org.includes("@")) return org;
+    return toClientOrgReference(org, await tryListAllOrgs()).org ?? org;
 }
