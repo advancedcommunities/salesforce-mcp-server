@@ -65,7 +65,7 @@ export function registerResources(server: McpServer) {
         "salesforce://permissions",
         {
             description:
-                "Current server permission settings including read-only mode, allowed orgs, and default org",
+                "Current server permission settings including read-only mode, allowed orgs, client browser mode, and default org",
             mimeType: "application/json",
         },
         async () => {
@@ -78,6 +78,7 @@ export function registerResources(server: McpServer) {
                         text: JSON.stringify({
                             readOnly: permissions.isReadOnly(),
                             allowedOrgs: permissions.getAllowedOrgs(),
+                            useClientBrowser: permissions.usesClientBrowser(),
                             defaultOrg,
                         }),
                     },

@@ -5,7 +5,7 @@
     "version": "1.6.7",
     "description": "Salesforce MCP Server - Interact with Salesforce orgs through AI assistants",
     "icon": "icon.png",
-    "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)",
+    "long_description": "Enables AI assistants to execute Apex code, query Salesforce data, and manage org metadata using your existing Salesforce CLI authentication. Perfect for developers and administrators who want to automate Salesforce tasks through natural language interactions.\n\nSupports environment variables:\n- READ_ONLY=true - Prevents Apex code execution\n- ALLOWED_ORGS=ALL or comma-separated org list - Restricts access to specific orgs (default: ALL)\n- USE_CLIENT_BROWSER=true - Returns a pre-authenticated URL for the AI client's built-in browser instead of launching your desktop browser",
     "author": {
         "name": "Advanced Communities",
         "url": "https://advancedcommunities.com"
@@ -29,6 +29,13 @@
             "description": "Comma-separated list of allowed org aliases, or 'ALL' to allow all orgs",
             "default": "ALL",
             "required": true
+        },
+        "USE_CLIENT_BROWSER": {
+            "type": "boolean",
+            "title": "Use Client's Built-in Browser",
+            "description": "When enabled, the 'open' and 'open_record' tools return a pre-authenticated Salesforce URL for the AI client's built-in browser instead of launching your desktop browser",
+            "default": false,
+            "required": false
         }
     },
     "server": {
@@ -39,7 +46,8 @@
             "args": ["${__dirname}/build/index.js"],
             "env": {
                 "READ_ONLY": "${user_config.READ_ONLY}",
-                "ALLOWED_ORGS": "${user_config.ALLOWED_ORGS}"
+                "ALLOWED_ORGS": "${user_config.ALLOWED_ORGS}",
+                "USE_CLIENT_BROWSER": "${user_config.USE_CLIENT_BROWSER}"
             }
         }
     },
@@ -130,11 +138,7 @@
         },
         {
             "name": "open",
-            "description": "Open a Salesforce org in a browser"
-        },
-        {
-            "name": "generate_frontdoor_url",
-            "description": "Generate an authenticated Salesforce frontdoor URL for seamless browser login without re-entering credentials"
+            "description": "Open a Salesforce org in a browser, or return a pre-authenticated URL for the client's built-in browser"
         },
         {
             "name": "package_install",
@@ -166,7 +170,7 @@
         },
         {
             "name": "open_record",
-            "description": "Open a Salesforce record in a browser"
+            "description": "Open a Salesforce record in a browser, or return a pre-authenticated URL for the client's built-in browser"
         },
         {
             "name": "search_records",
@@ -203,6 +207,10 @@
         {
             "name": "clear_default_org",
             "description": "Clear the default target org from the Salesforce CLI configuration"
+        },
+        {
+            "name": "install_skill",
+            "description": "Install the Salesforce MCP Server skill for Claude Code with tool selection guidance and workflow patterns"
         }
     ],
     "compatibility": {

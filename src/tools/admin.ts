@@ -25,6 +25,7 @@ export const registerAdminTools = (server: McpServer) => {
                         text: JSON.stringify({
                             readOnly: permissions.isReadOnly(),
                             allowedOrgs: allowedOrgs,
+                            useClientBrowser: permissions.usesClientBrowser(),
                             defaultOrg: defaultOrg || "Not configured",
                             message:
                                 allowedOrgs === "ALL"

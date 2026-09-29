@@ -3,6 +3,7 @@ import { logger } from "../utils/logger.js";
 interface PermissionConfig {
     readOnly: boolean;
     allowedOrgs: string[] | "ALL";
+    useClientBrowser: boolean;
 }
 
 class PermissionsManager {
@@ -17,6 +18,7 @@ class PermissionsManager {
                 allowedOrgsEnv === "ALL"
                     ? "ALL"
                     : allowedOrgsEnv.split(",").map((org) => org.trim()),
+            useClientBrowser: process.env.USE_CLIENT_BROWSER === "true",
         };
     }
 
@@ -39,6 +41,14 @@ class PermissionsManager {
 
     getAllowedOrgs(): string[] | "ALL" {
         return this.config.allowedOrgs;
+    }
+
+    /**
+     * When enabled, tools that would launch the operating system browser
+     * instead return a ready-to-open URL for the MCP client's built-in browser.
+     */
+    usesClientBrowser(): boolean {
+        return this.config.useClientBrowser;
     }
 }
 

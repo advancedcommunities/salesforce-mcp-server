@@ -24,6 +24,7 @@ import { permissions } from "./config/permissions.js";
 import { initLogger, logger } from "./utils/logger.js";
 import { initElicitation } from "./utils/elicitation.js";
 import { applySchemaDialectFix } from "./utils/schemaDialect.js";
+import { buildBrowserInstructions } from "./utils/clientBrowser.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -57,13 +58,19 @@ function buildServerDescription(): string {
         permissionInfo.push(`Access restricted to: ${allowedOrgs.join(", ")}`);
     }
 
+    if (permissions.usesClientBrowser()) {
+        permissionInfo.push(
+            "Client browser mode (org/record URLs handed to the client's built-in browser)",
+        );
+    }
+
     if (permissionInfo.length > 0) {
         description += `Security: ${permissionInfo.join(" | ")}`;
     } else {
         description += `Security: Full access enabled for all authenticated orgs`;
     }
 
-    description += `\nTools: 41 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment, skill)`;
+    description += `\nTools: 40 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment, skill)`;
     description += `\nResources: 5 available (permissions, org metadata, objects, object schema, limits)`;
     description += `\nPrompts: 5 available (soql_builder, apex_review, org_health_check, deploy_checklist, debug_apex)`;
 
@@ -88,7 +95,12 @@ const server = new McpServer(
             ],
         }),
     },
-    { capabilities: { logging: {} } },
+    {
+        capabilities: { logging: {} },
+        // Surfaced to the client at initialize and typically injected into the
+        // assistant's system prompt, so it knows how org URLs should be opened.
+        instructions: buildBrowserInstructions(),
+    },
 );
 
 initLogger(server);
@@ -151,11 +163,17 @@ async function main() {
         };
     }
 
+    const browserMode = permissions.usesClientBrowser()
+        ? "client's built-in browser"
+        : "system browser";
+
     logger.info(
         "salesforce",
-        `Salesforce MCP Server v${SERVER_VERSION} started`,
+        `Salesforce MCP Server v${SERVER_VERSION} started (org URLs open in: ${browserMode})`,
     );
-    console.error("Salesforce MCP Server running on stdio");
+    console.error(
+        `Salesforce MCP Server running on stdio (org URLs open in: ${browserMode})`,
+    );
 }
 
 main().catch((error) => {
