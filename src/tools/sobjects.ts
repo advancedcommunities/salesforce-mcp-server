@@ -3,7 +3,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 
 export const executeSobjectList = async (targetOrg: string) => {
     const sfCommand = `sf sobject list --sobject all --target-org ${shq(targetOrg)} --json`;
@@ -84,7 +88,7 @@ export const registerSObjectTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -94,14 +98,17 @@ export const registerSObjectTools = (server: McpServer) => {
 
             const result = await executeSobjectList(targetOrg);
             const structuredContent = {
-                targetOrg,
+                targetOrg: await toClientOrgLabel(targetOrg),
                 sobjects: result.result as string[],
             };
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
                 structuredContent,
@@ -202,7 +209,7 @@ export const registerSObjectTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -213,7 +220,7 @@ export const registerSObjectTools = (server: McpServer) => {
             const result = await executeSObjectDescribe(targetOrg, sObjectName);
             const describe = result.result as any;
             const structuredContent = {
-                targetOrg,
+                targetOrg: await toClientOrgLabel(targetOrg),
                 name: describe.name,
                 label: describe.label,
                 keyPrefix: describe.keyPrefix ?? null,
@@ -253,7 +260,10 @@ export const registerSObjectTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
                 structuredContent,

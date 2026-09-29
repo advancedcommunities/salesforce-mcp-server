@@ -2,7 +2,14 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
 import { permissions } from "../config/permissions.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import {
+    maskOrgAuthorization,
+    maskOrgReference,
+} from "../utils/maskIdentifiers.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { shq } from "../utils/shellEscape.js";
 import {
@@ -26,7 +33,7 @@ async function resolveAndValidateOrg(targetOrg?: string): Promise<string> {
     const org = await resolveTargetOrg(targetOrg);
     if (!permissions.isOrgAllowed(org)) {
         throw new Error(
-            `Access denied: Org '${org}' is not in the allowed list`,
+            `Access denied: Org '${maskOrgReference(org)}' is not in the allowed list`,
         );
     }
     return org;
@@ -90,6 +97,7 @@ export function registerPrompts(server: McpServer) {
         async (args) => {
             try {
                 const org = await resolveAndValidateOrg(args.targetOrg);
+                const orgLabel = await toClientOrgLabel(org);
                 const result = await executeSObjectDescribe(
                     org,
                     args.objectName,
@@ -150,7 +158,7 @@ export function registerPrompts(server: McpServer) {
                             role: "user" as const,
                             content: {
                                 type: "text" as const,
-                                text: `Help me build a SOQL query for the **${args.objectName}** object in org **${org}**.
+                                text: `Help me build a SOQL query for the **${args.objectName}** object in org **${orgLabel}**.
 
 Here is the object schema:
 
@@ -205,6 +213,7 @@ Then build the final SOQL query for me.`,
         async (args) => {
             try {
                 const org = await resolveAndValidateOrg(args.targetOrg);
+                const orgLabel = await toClientOrgLabel(org);
                 if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(args.className)) {
                     return errorPromptResult(
                         `Invalid Apex class name '${args.className}'.`,
@@ -218,7 +227,7 @@ Then build the final SOQL query for me.`,
                 const records = queryResult?.result?.records || [];
                 if (records.length === 0) {
                     return errorPromptResult(
-                        `Apex class '${args.className}' not found in org '${org}'.`,
+                        `Apex class '${args.className}' not found in org '${orgLabel}'.`,
                     );
                 }
 
@@ -230,7 +239,7 @@ Then build the final SOQL query for me.`,
                             role: "user" as const,
                             content: {
                                 type: "text" as const,
-                                text: `Please perform a code review of this Apex class from org **${org}**.
+                                text: `Please perform a code review of this Apex class from org **${orgLabel}**.
 
 **Class:** ${cls.Name}
 **API Version:** ${cls.ApiVersion}
@@ -283,6 +292,7 @@ Provide specific findings with line references and suggested improvements.`,
         async (args) => {
             try {
                 const org = await resolveAndValidateOrg(args.targetOrg);
+                const orgLabel = await toClientOrgLabel(org);
 
                 const [orgInfo, limitsResult, coverageResult] =
                     await Promise.all([
@@ -312,8 +322,13 @@ Provide specific findings with line references and suggested improvements.`,
                         ? coverageRecords[0].PercentCovered
                         : "unknown";
 
-                const orgInfoText = orgInfo
-                    ? `- **Username:** ${orgInfo.username}\n- **Org ID:** ${orgInfo.orgId || "N/A"}\n- **Instance URL:** ${orgInfo.instanceUrl || "N/A"}\n- **API Version:** ${orgInfo.apiVersion || "N/A"}\n- **Is Dev Hub:** ${orgInfo.isDevHub ?? "N/A"}`
+                // Username, org ID and instance URL are masked like every
+                // other surface that reaches the AI client.
+                const safeOrgInfo = orgInfo
+                    ? maskOrgAuthorization(orgInfo)
+                    : orgInfo;
+                const orgInfoText = safeOrgInfo
+                    ? `- **Username:** ${safeOrgInfo.username}\n- **Org ID:** ${safeOrgInfo.orgId || "N/A"}\n- **Instance URL:** ${safeOrgInfo.instanceUrl || "N/A"}\n- **API Version:** ${safeOrgInfo.apiVersion || "N/A"}\n- **Is Dev Hub:** ${safeOrgInfo.isDevHub ?? "N/A"}`
                     : "Org info unavailable";
 
                 const criticalLimitsText =
@@ -332,7 +347,7 @@ Provide specific findings with line references and suggested improvements.`,
                             role: "user" as const,
                             content: {
                                 type: "text" as const,
-                                text: `Analyze the health of Salesforce org **${org}**.
+                                text: `Analyze the health of Salesforce org **${orgLabel}**.
 
 **Org Information:**
 ${orgInfoText}
@@ -382,6 +397,7 @@ Please analyze this data and provide:
         async (args) => {
             try {
                 const org = await resolveAndValidateOrg(args.targetOrg);
+                const orgLabel = await toClientOrgLabel(org);
 
                 const [limitsResult, coverageResult] = await Promise.all([
                     executeSfCommand(
@@ -424,7 +440,7 @@ Please analyze this data and provide:
                             role: "user" as const,
                             content: {
                                 type: "text" as const,
-                                text: `Generate a pre-deployment checklist for org **${org}**.
+                                text: `Generate a pre-deployment checklist for org **${orgLabel}**.
 
 **Current Org Status:**
 - Apex Code Coverage: ${coverageStatus}
@@ -485,6 +501,7 @@ Please review this checklist against the org data and help me:
         async (args) => {
             try {
                 const org = await resolveAndValidateOrg(args.targetOrg);
+                const orgLabel = await toClientOrgLabel(org);
                 let logContent: string;
                 let logId = args.logId;
 
@@ -508,7 +525,7 @@ Please review this checklist against the org data and help me:
                     const logs = listResult?.result || [];
                     if (logs.length === 0) {
                         return errorPromptResult(
-                            `No debug logs found in org '${org}'. Generate logs by running Apex code or enabling debug logging.`,
+                            `No debug logs found in org '${orgLabel}'. Generate logs by running Apex code or enabling debug logging.`,
                         );
                     }
                     logId = logs[0].Id;
@@ -535,7 +552,7 @@ Please review this checklist against the org data and help me:
                             role: "user" as const,
                             content: {
                                 type: "text" as const,
-                                text: `Analyze this Apex debug log from org **${org}** (Log ID: ${logId}).
+                                text: `Analyze this Apex debug log from org **${orgLabel}** (Log ID: ${logId}).
 
 \`\`\`
 ${truncatedLog}

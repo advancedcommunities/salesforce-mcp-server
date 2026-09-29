@@ -3,7 +3,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { shq } from "../utils/shellEscape.js";
 import { permissions } from "../config/permissions.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 class SfCliError extends Error {
@@ -73,11 +77,11 @@ const executeSoqlQueryToFile = async (
     return result.result;
 };
 
-const buildQueryErrorResponse = (error: unknown, targetOrg: string) => {
+const buildQueryErrorResponse = async (error: unknown, targetOrg: string) => {
     const isSfError = error instanceof SfCliError;
     const payload: Record<string, unknown> = {
         success: false,
-        targetOrg,
+        targetOrg: await toClientOrgLabel(targetOrg),
         errorName: isSfError ? error.name : "Error",
         message: error instanceof Error ? error.message : String(error),
     };
@@ -174,7 +178,7 @@ export const registerQueryTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -196,7 +200,10 @@ export const registerQueryTools = (server: McpServer) => {
                 return buildQueryErrorResponse(error, targetOrg);
             }
 
-            const structuredContent = { targetOrg, records: result };
+            const structuredContent = {
+                targetOrg: await toClientOrgLabel(targetOrg),
+                records: result,
+            };
             return {
                 content: [
                     {
@@ -301,7 +308,7 @@ export const registerQueryTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -328,7 +335,10 @@ export const registerQueryTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };

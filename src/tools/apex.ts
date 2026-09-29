@@ -14,7 +14,11 @@ import { getConnection } from "../shared/connection.js";
 import { permissions } from "../config/permissions.js";
 import { expandPath, shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 import { createProgressReporter, type ToolExtra } from "../utils/progress.js";
 
 const executeAnonymousApex = async (
@@ -355,7 +359,7 @@ export const registerApexTools = (server: McpServer) => {
                             text: JSON.stringify({
                                 success: false,
                                 compiled: false,
-                                compileProblem: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                compileProblem: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -367,7 +371,10 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -483,7 +490,7 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -505,7 +512,10 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -635,7 +645,7 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -649,7 +659,7 @@ export const registerApexTools = (server: McpServer) => {
                 input.codeCoverage,
             );
             const structuredContent = {
-                targetOrg,
+                targetOrg: await toClientOrgLabel(targetOrg),
                 summary: result.summary,
                 tests: result.tests,
                 codecoverage: result.codecoverage,
@@ -658,7 +668,10 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
                 structuredContent,
@@ -726,7 +739,7 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access denied: Org '${targetOrg}' is not in the allowed list`,
+                                message: `Access denied: Org '${maskOrgReference(targetOrg)}' is not in the allowed list`,
                             }),
                         },
                     ],
@@ -742,7 +755,10 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -922,7 +938,7 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -934,7 +950,10 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -1000,7 +1019,7 @@ export const registerApexTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -1016,7 +1035,10 @@ export const registerApexTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };

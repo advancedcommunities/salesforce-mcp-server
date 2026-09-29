@@ -3,7 +3,11 @@ import { z } from "zod";
 import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import { permissions } from "../config/permissions.js";
-import { resolveTargetOrg } from "../utils/resolveTargetOrg.js";
+import {
+    resolveTargetOrg,
+    toClientOrgLabel,
+} from "../utils/resolveTargetOrg.js";
+import { maskOrgReference } from "../utils/maskIdentifiers.js";
 import { requestConfirmation } from "../utils/elicitation.js";
 
 const executePackageInstall = async (
@@ -191,7 +195,7 @@ export function registerPackageTools(server: McpServer) {
                         {
                             type: "text",
                             text: JSON.stringify({
-                                error: `Access to org '${targetOrg}' is not allowed`,
+                                error: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                                 allowedOrgs: permissions.getAllowedOrgs(),
                             }),
                         },
@@ -215,7 +219,10 @@ export function registerPackageTools(server: McpServer) {
                     content: [
                         {
                             type: "text",
-                            text: JSON.stringify({ targetOrg, ...result }),
+                            text: JSON.stringify({
+                                targetOrg: await toClientOrgLabel(targetOrg),
+                                ...result,
+                            }),
                         },
                     ],
                 };
@@ -314,7 +321,7 @@ export function registerPackageTools(server: McpServer) {
                         {
                             type: "text",
                             text: JSON.stringify({
-                                error: `Access to org '${targetOrg}' is not allowed`,
+                                error: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                                 allowedOrgs: permissions.getAllowedOrgs(),
                             }),
                         },
@@ -350,7 +357,10 @@ export function registerPackageTools(server: McpServer) {
                     content: [
                         {
                             type: "text",
-                            text: JSON.stringify({ targetOrg, ...result }),
+                            text: JSON.stringify({
+                                targetOrg: await toClientOrgLabel(targetOrg),
+                                ...result,
+                            }),
                         },
                     ],
                 };
