@@ -5,8 +5,9 @@ import { shq } from "../utils/shellEscape.js";
 import { executeSfCommand } from "../utils/sfCommand.js";
 import {
     resolveTargetOrg,
-    getDefaultOrg,
     clearDefaultOrgCache,
+    getDefaultOrgForClient,
+    toClientOrgLabel,
 } from "../utils/resolveTargetOrg.js";
 import { requestConfirmation } from "../utils/elicitation.js";
 import {
@@ -14,6 +15,14 @@ import {
     buildOrgUrl,
     clientBrowserResult,
 } from "../utils/clientBrowser.js";
+import {
+    maskOrgAuthorization,
+    maskOrgIdentifierFields,
+    maskOrgReference,
+    maskUsername,
+    maskInstanceUrl,
+    scrubOrgIdentifiers,
+} from "../utils/maskIdentifiers.js";
 import z from "zod";
 
 /**
@@ -28,16 +37,17 @@ const listConnectedSalesforceOrgs = async () => {
     const filteredOrgs =
         allowedOrgs === "ALL"
             ? orgs
-            : orgs.filter((org) => {
-                  // Check if org username or any alias is in allowed list
-                  if (permissions.isOrgAllowed(org.username)) return true;
-                  if (org.aliases) {
-                      return org.aliases.some((alias) =>
-                          permissions.isOrgAllowed(alias),
-                      );
-                  }
-                  return false;
-              });
+            : orgs.filter(
+                  // Check if org username or any alias is in allowed list.
+                  // Uses a plain lookup rather than permissions.isOrgAllowed,
+                  // which logs every miss (with the raw username) to the client.
+                  (org) =>
+                      allowedOrgs.includes(org.username) ||
+                      (org.aliases?.some((alias) =>
+                          allowedOrgs.includes(alias),
+                      ) ??
+                          false),
+              );
 
     const scratchOrgs = filteredOrgs.filter(
         (org) => !org.isDevHub && org.orgId,
@@ -53,17 +63,27 @@ const listConnectedSalesforceOrgs = async () => {
             org.instanceUrl?.includes(".salesforce.com"),
     );
 
+    // Masking is always on and happens only after ALLOWED_ORGS filtering and
+    // categorization, which both need the raw values (including the raw
+    // instanceUrl). Map to copies so the objects returned by listAllOrgs are
+    // never mutated.
+    const present = (list: typeof filteredOrgs) =>
+        list.map(maskOrgAuthorization);
+
     return {
         result: {
-            devHubOrgs,
-            production,
-            sandboxes,
-            scratchOrgs,
+            devHubOrgs: present(devHubOrgs),
+            production: present(production),
+            sandboxes: present(sandboxes),
+            scratchOrgs: present(scratchOrgs),
             totalOrgs: filteredOrgs.length,
             permissionMessage:
                 allowedOrgs === "ALL"
                     ? undefined
-                    : `Showing only allowed orgs: ${allowedOrgs.join(", ")}`,
+                    : `Showing only allowed orgs: ${allowedOrgs
+                          .map(maskOrgReference)
+                          .join(", ")}`,
+            note: "Usernames, org IDs and instance URLs are masked. Use an org alias as targetOrg in other tools; masked usernames will not work. Orgs without an alias need one set by the user first (e.g. 'sf alias set myOrg=<username>').",
         },
     };
 };
@@ -271,7 +291,8 @@ export const registerOrgTools = (server: McpServer) => {
         "list_connected_salesforce_orgs",
         {
             description:
-                "List connected Salesforce Orgs. This command retrieves a list of all Salesforce Orgs that are currently connected to the Salesforce CLI. The results are returned in JSON format, providing details about each Org, including its alias, username, and other metadata. Use this command to see which Salesforce Orgs you have access to and can interact with using the Salesforce CLI.",
+                "List connected Salesforce Orgs. This command retrieves a list of all Salesforce Orgs that are currently connected to the Salesforce CLI. The results are returned in JSON format, providing details about each Org, including its alias, username, and other metadata. Use this command to see which Salesforce Orgs you have access to and can interact with using the Salesforce CLI." +
+                " Usernames, org IDs and instance URLs in the result are masked for privacy; refer to orgs by alias when passing targetOrg to other tools.",
             outputSchema: {
                 devHubOrgs: z.array(orgInfoSchema),
                 production: z.array(orgInfoSchema),
@@ -279,6 +300,7 @@ export const registerOrgTools = (server: McpServer) => {
                 scratchOrgs: z.array(orgInfoSchema),
                 totalOrgs: z.number(),
                 permissionMessage: z.string().optional(),
+                note: z.string(),
             },
             annotations: {
                 readOnlyHint: true,
@@ -288,16 +310,34 @@ export const registerOrgTools = (server: McpServer) => {
             },
         },
         async () => {
-            const orgList = await listConnectedSalesforceOrgs();
-            return {
-                content: [
-                    {
-                        type: "text",
-                        text: JSON.stringify(orgList),
-                    },
-                ],
-                structuredContent: orgList.result,
-            };
+            try {
+                const orgList = await listConnectedSalesforceOrgs();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(orgList),
+                        },
+                    ],
+                    structuredContent: orgList.result,
+                };
+            } catch (error: any) {
+                const message = String(error?.message ?? error);
+                return {
+                    isError: true,
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                message: `Failed to list connected orgs: ${scrubOrgIdentifiers(
+                                    message,
+                                )}`,
+                            }),
+                        },
+                    ],
+                };
+            }
         },
     );
 
@@ -341,11 +381,13 @@ export const registerOrgTools = (server: McpServer) => {
             }
 
             const result = await loginIntoOrg(alias, isProduction);
+            // The CLI result carries the new org's username, org ID and
+            // instance/login URLs, none of which the AI supplied; mask them.
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify(maskOrgIdentifierFields(result)),
                     },
                 ],
             };
@@ -426,7 +468,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -457,7 +499,10 @@ export const registerOrgTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -538,7 +583,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -569,7 +614,10 @@ export const registerOrgTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -580,7 +628,7 @@ export const registerOrgTools = (server: McpServer) => {
         "display_user",
         {
             description:
-                "Display information about a Salesforce user. Output includes the profile name, org ID, access token, instance URL, login URL, and alias if applicable. The displayed alias is local and different from the Alias field of the User sObject record of the new user, which you set in the Setup UI.",
+                "Display information about a Salesforce user. Output includes the profile name, org ID, access token, instance URL, login URL, and alias if applicable. The username, org ID, instance URL and login URL are masked for privacy. The displayed alias is local and different from the Alias field of the User sObject record of the new user, which you set in the Setup UI.",
             inputSchema: {
                 input: z.object({
                     targetOrg: z
@@ -623,7 +671,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -635,7 +683,12 @@ export const registerOrgTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            // Username, org ID and instance/login URLs are
+                            // masked like in list_connected_salesforce_orgs.
+                            ...maskOrgIdentifierFields(result),
+                        }),
                     },
                 ],
             };
@@ -714,7 +767,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -746,7 +799,10 @@ export const registerOrgTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -814,7 +870,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -830,7 +886,10 @@ export const registerOrgTools = (server: McpServer) => {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify({ targetOrg, ...result }),
+                        text: JSON.stringify({
+                            targetOrg: await toClientOrgLabel(targetOrg),
+                            ...result,
+                        }),
                     },
                 ],
             };
@@ -920,7 +979,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -962,11 +1021,19 @@ export const registerOrgTools = (server: McpServer) => {
             }
 
             const result = await logoutFromOrg(targetOrg, all);
+            // `sf org logout --json` returns the raw usernames that were
+            // logged out; mask them (the AI only supplied an alias or all).
+            const safeResult = maskOrgIdentifierFields(result);
+            if (Array.isArray(safeResult?.result)) {
+                safeResult.result = safeResult.result.map((entry: unknown) =>
+                    typeof entry === "string" ? maskUsername(entry) : entry,
+                );
+            }
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(result),
+                        text: JSON.stringify(safeResult),
                     },
                 ],
             };
@@ -1059,7 +1126,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                message: `Access to org '${targetOrg}' is not allowed`,
+                                message: `Access to org '${maskOrgReference(targetOrg)}' is not allowed`,
                             }),
                         },
                     ],
@@ -1075,7 +1142,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                targetOrg,
+                                targetOrg: await toClientOrgLabel(targetOrg),
                                 message:
                                     "Provide either path or sourceFile, not both — the Salesforce CLI rejects the combination.",
                             }),
@@ -1105,7 +1172,8 @@ export const registerOrgTools = (server: McpServer) => {
                                 type: "text",
                                 text: JSON.stringify({
                                     success: true,
-                                    targetOrg,
+                                    targetOrg:
+                                        await toClientOrgLabel(targetOrg),
                                     ...clientBrowserResult(
                                         url,
                                         `org '${targetOrg}'`,
@@ -1121,7 +1189,8 @@ export const registerOrgTools = (server: McpServer) => {
                                 type: "text",
                                 text: JSON.stringify({
                                     success: false,
-                                    targetOrg,
+                                    targetOrg:
+                                        await toClientOrgLabel(targetOrg),
                                     message: error.message,
                                 }),
                             },
@@ -1146,14 +1215,27 @@ export const registerOrgTools = (server: McpServer) => {
                         {
                             type: "text",
                             text: JSON.stringify({
-                                targetOrg,
+                                targetOrg: await toClientOrgLabel(targetOrg),
                                 ...(usedDesktopFallback
                                     ? {
                                           systemBrowserReason:
                                               "browser and privateMode only work in the desktop browser, so the org was opened there despite client browser mode",
                                       }
                                     : {}),
-                                ...result,
+                                // The desktop browser is already open, so the
+                                // login URL (with its token), username and org
+                                // ID are masked rather than echoed back.
+                                ...maskOrgIdentifierFields({
+                                    ...result,
+                                    result: result?.result
+                                        ? {
+                                              ...result.result,
+                                              url: maskInstanceUrl(
+                                                  result.result.url,
+                                              ),
+                                          }
+                                        : result?.result,
+                                }),
                             }),
                         },
                     ],
@@ -1165,7 +1247,7 @@ export const registerOrgTools = (server: McpServer) => {
                             type: "text",
                             text: JSON.stringify({
                                 success: false,
-                                targetOrg,
+                                targetOrg: await toClientOrgLabel(targetOrg),
                                 message: error.message,
                             }),
                         },
@@ -1179,7 +1261,7 @@ export const registerOrgTools = (server: McpServer) => {
         "get_default_org",
         {
             description:
-                "Get the current default target org configured in the Salesforce CLI. This returns the org alias or username that is used as the default when no targetOrg is specified in other tool calls.",
+                "Get the current default target org configured in the Salesforce CLI. Returns only the org's alias, which is used as the default when no targetOrg is specified in other tool calls. If the default org has no alias, a masked username is returned with a hint asking the user to set an alias; usernames, org IDs and instance URLs are never returned.",
             annotations: {
                 readOnlyHint: true,
                 destructiveHint: false,
@@ -1188,26 +1270,29 @@ export const registerOrgTools = (server: McpServer) => {
             },
         },
         async () => {
+            const notConfigured =
+                "No default target org is configured. Set one with: sf config set target-org <alias>";
             try {
-                const result = await executeSfCommand(
-                    "sf config get target-org --json",
-                );
-                const value = result?.result?.[0]?.value;
+                const { org, isAlias, message } =
+                    await getDefaultOrgForClient();
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify({
                                 success: true,
-                                defaultOrg: value || null,
-                                message: value
-                                    ? `Default target org is '${value}'`
-                                    : "No default target org is configured. Set one with: sf config set target-org <alias>",
+                                defaultOrg: org,
+                                isAlias,
+                                message: !org
+                                    ? notConfigured
+                                    : isAlias
+                                      ? `Default target org is '${org}'`
+                                      : message,
                             }),
                         },
                     ],
                 };
-            } catch (error: any) {
+            } catch {
                 return {
                     content: [
                         {
@@ -1215,8 +1300,7 @@ export const registerOrgTools = (server: McpServer) => {
                             text: JSON.stringify({
                                 success: false,
                                 defaultOrg: null,
-                                message:
-                                    "No default target org is configured. Set one with: sf config set target-org <alias>",
+                                message: notConfigured,
                             }),
                         },
                     ],
