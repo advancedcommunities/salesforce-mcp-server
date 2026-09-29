@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Prevents potential command injection through specially crafted org aliases, field names, or other parameters
     - Includes platform-aware escaping for Windows, macOS, and Linux
     - Added comprehensive test suite for shell escaping safety
+    - Responsibly disclosed and fixed by Syed Anas Mohiuddin ([@SyedAnas01](https://github.com/SyedAnas01)) in [#16](https://github.com/advancedcommunities/salesforce-mcp-server/pull/16)
 
 ### Security
 
