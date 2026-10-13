@@ -153,7 +153,7 @@ To be able to run the MCP Server – you need a client. The client can be any AI
 
 #### Claude Code Skill
 
-The server includes an `install_skill` tool that adds a Salesforce-specific skill to Claude Code. The skill teaches Claude how to effectively use all 40 tools, 5 prompts, and 5 resources together — including tool selection guidance, workflow patterns, and common pitfalls to avoid.
+The server includes an `install_skill` tool that adds a Salesforce-specific skill to Claude Code. The skill teaches Claude how to effectively use all 48 tools, 5 prompts, and 5 resources together — including tool selection guidance, workflow patterns, and common pitfalls to avoid.
 
 **Automatic installation**: Claude can call the `install_skill` tool when working on Salesforce tasks. You can also ask Claude directly: "Install the Salesforce skill."
 
@@ -394,7 +394,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 40 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 48 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
 
 ### Available Tools
 
@@ -813,6 +813,36 @@ Install the Salesforce MCP Server skill for Claude Code, providing domain-specif
 - "Install the Salesforce skill"
 - "Set up the Salesforce MCP skill for Claude Code"
 - "Reinstall the Salesforce skill with force"
+
+#### 41-48. Bulk API 2.0 Tools
+
+Bulk API 2.0 tools run large DML jobs asynchronously through the existing org connection. Each tool starts a job, waits up to `wait` seconds (default 30, max 45), and returns the `jobId`, state, processed and failed counts, and up to 10 sample failures. If the job is still running, call `bulk_job_status` with the `jobId`. Input is one of inline `records` (max 2000 rows, 10 MB serialized), a `csvPath` to a UTF-8 CSV file on the server's disk (max 150 MB), or `csvContent`, the raw CSV text with its header row (max 10 MB). Use `records` for small inline sets, `csvPath` for a file already on the server's disk, and `csvContent` when the file cannot be read from the server's machine, for example when it was uploaded into a sandboxed client such as Claude Cowork (the client passes the file's text, and the server never sees the file's path). Exactly one of the three is allowed. Delete tools take `ids` in place of `records`.
+
+- `bulk_insert_records`: insert records. Do not include `Id`.
+- `bulk_update_records`: update records by `Id`. Inline `Id` values are format-checked before the job is created; `Id` values in a CSV are not, and a malformed one fails only its own row. Updates above 500 rows ask the user to confirm when the client can prompt; a failed or declined prompt blocks the update. Without prompt support the update runs.
+- `bulk_upsert_records`: insert or update on an external ID field (`externalIdField`, a field on the object itself). Upserts above 500 rows follow the same confirmation rule as updates.
+- `bulk_delete_records`: soft delete by `ids` or a CSV with an `Id` column. If the client can show a confirmation prompt, the user is asked and declining blocks the delete. If it cannot (for example Claude Cowork, which has its own tool approval), pass `confirm: "DELETE <sobject>"` and approve the call in the client; without the exact string the delete is refused.
+- `bulk_hard_delete_records`: permanent delete. Requires `confirm: "HARD DELETE <sobject>"` in every client, and also asks the user to confirm when the client can prompt. Needs the Bulk API Hard Delete permission.
+- `bulk_job_status`: read-only check of a job.
+- `bulk_job_results`: writes `successful-results.csv`, `failed-results.csv` and `unprocessed-records.csv` to `~/salesforce-bulk-results/<jobId>/` (your home directory), or to `outputDir` if given. The result folder itself must not be a symbolic link, for the default folder as well as a custom one; symbolic links in parent folders are not checked. A custom `outputDir` must be an absolute path and must not already contain these files. The default folder is overwritten on re-run.
+- `bulk_job_abort`: aborts a job that has not finished. Jobs are never deleted by these tools.
+
+Set `READ_ONLY=true` to block all Bulk API writes, including `bulk_job_abort`. `bulk_job_status` and `bulk_job_results` still work, because `bulk_job_results` only writes local files. Upload and create failures return the `jobId` and abort the job when the upload did not complete.
+
+**Async pattern:** start tools wait for up to `wait` seconds. If the job is still running, the response includes the `jobId` and state. Poll with `bulk_job_status` until the state is `JobComplete`, `Failed` or `Aborted`, then call `bulk_job_results` for full success, failure and unprocessed CSVs. Jobs are never deleted by these tools.
+
+**Path policy:** `csvPath` must be absolute, end in `.csv`, point to an existing regular file (symlinks are followed, so the target is what counts), be at most 150 MB, and be UTF-8 with a header row and at least one data row (a header-only or blank-line-only file is refused). There is no folder restriction: any `.csv` the server process can read can be uploaded to the connected org, so an MCP client can send any local CSV it can name. `outputDir` must be absolute, must not be a symbolic link or a non-directory, and is created if missing; there is no folder restriction either, so result folders can be written anywhere the server process can write. Only the final folder is checked for symbolic links, not its parents. `csvContent` is not a path, so the path policy does not apply to it; it is checked only for size, header, required columns and line endings.
+
+**CSV rules (`csvPath` and `csvContent`):** header names must not have leading or trailing spaces, because Bulk API reads them as written. Every line break must use the same ending as the header row (all LF or all CRLF), so a mixed file is refused before upload. Quotes count only at the start of a cell, so a stray quote inside a value is ordinary text.
+
+**Limits and gotchas:**
+
+- Inline `records` are capped at 2000 rows and 10 MB of serialized CSV. `csvContent` is capped at 10 MB of text (UTF-8 bytes, including the header row), and the text is sent in the tool call, so use `csvPath` for larger volumes (max 150 MB per file). Current org limits are available from the `org_limits` resource.
+- Null values are written as `#N/A`, which clears the field on the Salesforce side. Keys missing from a record are left as empty cells, which do not change existing values on update.
+- Nested objects are flattened to dotted relationship headers, for example `Account.ExternalId__c`. Records from SOQL results have their `attributes` metadata dropped.
+- Updates must include `Id` on every row, and upserts must include the external ID field. Inserts and upserts should not include `Id`; the tools do not strip it, and Salesforce rejects or reports those rows.
+- Hard delete needs the 'Bulk API Hard Delete' system permission on the running user (usually granted through a profile or permission set, and by default only to System Administrators). Without it, the tool returns a permission error.
+- Records are processed in batches and rows are not rolled back. A job can report partial success, so always check `failed-results.csv` before retrying.
 
 ### Available Resources
 

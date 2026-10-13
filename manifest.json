@@ -211,6 +211,38 @@
         {
             "name": "install_skill",
             "description": "Install the Salesforce MCP Server skill for Claude Code with tool selection guidance and workflow patterns"
+        },
+        {
+            "name": "bulk_insert_records",
+            "description": "Insert many records with the Bulk API 2.0 from inline records, a CSV file (csvPath) or CSV text (csvContent, for files a sandboxed client cannot share by path; max 10 MB) (asynchronous, for large volumes)"
+        },
+        {
+            "name": "bulk_update_records",
+            "description": "Update many records by Id with the Bulk API 2.0 from inline records, a CSV file or CSV text (csvContent, max 10 MB); updates above 500 rows ask for confirmation when the client supports it"
+        },
+        {
+            "name": "bulk_upsert_records",
+            "description": "Insert or update many records with the Bulk API 2.0 from inline records, a CSV file or CSV text (csvContent, max 10 MB), matching on an external ID field; upserts above 500 rows ask for confirmation when the client supports it"
+        },
+        {
+            "name": "bulk_delete_records",
+            "description": "Soft-delete many records with the Bulk API 2.0 (Recycle Bin) from Ids, a CSV file or CSV text (csvContent, max 10 MB); asks the user to confirm when the client can prompt, otherwise requires confirm 'DELETE <sobject>' and the user's approval in the client"
+        },
+        {
+            "name": "bulk_hard_delete_records",
+            "description": "PERMANENTLY delete many records with the Bulk API 2.0 hardDelete from Ids, a CSV file or CSV text (csvContent, max 10 MB); requires the exact confirm string 'HARD DELETE <sobject>'; also asks the user to confirm when the client can prompt"
+        },
+        {
+            "name": "bulk_job_status",
+            "description": "Check the state and record counts of a Bulk API 2.0 job (read-only)"
+        },
+        {
+            "name": "bulk_job_results",
+            "description": "Write the successful, failed and unprocessed records of a finished Bulk API 2.0 job to local CSV files in ~/salesforce-bulk-results/<jobId>/, or to an absolute outputDir if given"
+        },
+        {
+            "name": "bulk_job_abort",
+            "description": "Abort a Bulk API 2.0 job that has not finished"
         }
     ],
     "compatibility": {

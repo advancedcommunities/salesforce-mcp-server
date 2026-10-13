@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerApexTools } from "./tools/apex.js";
 import { registerOrgTools } from "./tools/orgs.js";
 import { registerOrgTools as registerRecordTools } from "./tools/records.js";
@@ -18,6 +17,7 @@ import { registerSearchTools } from "./tools/search.js";
 import { registerLightningTools } from "./tools/lightning.js";
 import { registerProjectTools } from "./tools/project.js";
 import { registerSkillTools } from "./tools/skill.js";
+import { registerBulkTools } from "./tools/bulk.js";
 import { registerResources } from "./resources/resources.js";
 import { registerPrompts } from "./prompts/prompts.js";
 import { permissions } from "./config/permissions.js";
@@ -26,6 +26,7 @@ import { initElicitation } from "./utils/elicitation.js";
 import { applySchemaDialectFix } from "./utils/schemaDialect.js";
 import { buildBrowserInstructions } from "./utils/clientBrowser.js";
 import { maskOrgReference } from "./utils/maskIdentifiers.js";
+import { createStdioTransport } from "./utils/stdioTransport.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -73,7 +74,7 @@ function buildServerDescription(): string {
         description += `Security: Full access enabled for all authenticated orgs`;
     }
 
-    description += `\nTools: 40 available (apex, query, search, sobject, org management, records, admin, code analyzer, scanner, package, schema, lightning, project deployment, skill)`;
+    description += `\nTools: 48 available (apex, query, search, sobject, org management, records, bulk DML, admin, code analyzer, scanner, package, schema, lightning, project deployment, skill)`;
     description += `\nResources: 5 available (permissions, org metadata, objects, object schema, limits)`;
     description += `\nPrompts: 5 available (soql_builder, apex_review, org_health_check, deploy_checklist, debug_apex)`;
 
@@ -123,11 +124,12 @@ registerSearchTools(server);
 registerLightningTools(server);
 registerProjectTools(server);
 registerSkillTools(server);
+registerBulkTools(server);
 registerResources(server);
 registerPrompts(server);
 
 async function main() {
-    const transport = new StdioServerTransport();
+    const transport = createStdioTransport();
 
     // Advertise tool schemas with the JSON Schema 2020-12 dialect instead of
     // the draft-07 one the SDK emits, which 2020-12-only clients reject.
