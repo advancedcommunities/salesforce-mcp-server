@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-10-13
+
+### Added
+
+- **Bulk API 2.0 DML Tools**: Eight new tools for large-volume record operations, run asynchronously through the existing org connection
+    - `bulk_insert_records` - Insert records (do not include `Id`)
+    - `bulk_update_records` - Update records by `Id`
+    - `bulk_upsert_records` - Insert or update on an external ID field
+    - `bulk_delete_records` - Soft delete (Recycle Bin) by `ids` or a CSV with an `Id` column
+    - `bulk_hard_delete_records` - Permanent delete, requires `confirm: "HARD DELETE <sobject>"`
+    - `bulk_job_status` - Read-only check of a job's state and record counts
+    - `bulk_job_results` - Writes successful, failed and unprocessed records to local CSV files
+    - `bulk_job_abort` - Aborts a job that has not finished
+    - Input as inline `records` or `ids`, a local `csvPath`, or raw `csvContent` for sandboxed clients that cannot share file paths
+    - Start tools wait up to `wait` seconds (default 30, max 45) and return a `jobId` to poll; jobs are never deleted by these tools
+    - Updates and upserts above 500 rows ask the user to confirm when the client supports prompts
+
+### Changed
+
+- **Tool Count**: 40 → 48 tools (server description and README)
+
+### Fixed
+
+- **Large CSV Payloads over stdio**: Raised the stdio transport's maximum message size to 64 MiB so 10 MB `csvContent` payloads no longer close the transport and stop the server from answering (the SDK default is 10 MiB)
+
+### Security
+
+- `READ_ONLY=true` blocks all Bulk API writes, including `bulk_job_abort`; `ALLOWED_ORGS` and `READ_ONLY` are checked before any file is read
+- Bulk deletes confirm via elicitation; clients that cannot show a prompt must pass the exact confirm string and approve the call in the client
+- Hard delete always requires the typed confirm string and blocks when the user declines or the prompt fails
+- `csvPath` and `outputDir` are not restricted to a folder: any readable `.csv` can be uploaded and results can be written anywhere the server process can write. Result folders must not be symbolic links
+
 ## [1.7.0] - 2026-09-29
 
 ### Added
