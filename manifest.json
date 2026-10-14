@@ -209,10 +209,6 @@
             "description": "Clear the default target org from the Salesforce CLI configuration"
         },
         {
-            "name": "install_skill",
-            "description": "Install the Salesforce MCP Server skill for Claude Code with tool selection guidance and workflow patterns"
-        },
-        {
             "name": "bulk_insert_records",
             "description": "Insert many records with the Bulk API 2.0 from inline records, a CSV file (csvPath) or CSV text (csvContent, for files a sandboxed client cannot share by path; max 10 MB) (asynchronous, for large volumes)"
         },

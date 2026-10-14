@@ -151,16 +151,6 @@ To be able to run the MCP Server – you need a client. The client can be any AI
 
     > **Note**: By default, Claude Code installs MCP servers in local scope (current directory). Use `--scope user` to install globally for all projects.
 
-#### Claude Code Skill
-
-The server includes an `install_skill` tool that adds a Salesforce-specific skill to Claude Code. The skill teaches Claude how to effectively use all 48 tools, 5 prompts, and 5 resources together — including tool selection guidance, workflow patterns, and common pitfalls to avoid.
-
-**Automatic installation**: Claude can call the `install_skill` tool when working on Salesforce tasks. You can also ask Claude directly: "Install the Salesforce skill."
-
-**Manual installation**: Copy `skills/salesforce/SKILL.md` from this repository to `.claude/skills/salesforce/SKILL.md` in your project directory.
-
-Once installed, the skill persists across Claude Code sessions in the project and activates automatically when working with Salesforce orgs.
-
 #### Use it with Codex CLI
 
 The Codex CLI can be configured to leverage MCP servers by defining an [mcp_servers](https://github.com/openai/codex/blob/main/codex-rs/config.md#mcp_servers) section in `~/.codex/config.toml`.
@@ -394,7 +384,7 @@ You can check the current permission settings using the `get_server_permissions`
 
 ## How to use it
 
-Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 48 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
+Once the SF MCP Server is configured in your AI client, you can interact with Salesforce using natural language. The AI assistant will have access to 47 powerful tools, 5 guided workflow prompts, 5 browsable resource types, and structured logging with progress reporting:
 
 ### Available Tools
 
@@ -804,17 +794,7 @@ Clear the default target org from the Salesforce CLI configuration. After cleari
 - "Remove the default target org setting"
 - "Unset my default org"
 
-#### 40. Install Skill
-
-Install the Salesforce MCP Server skill for Claude Code, providing domain-specific guidance on tool usage, workflows, and best practices.
-
-**Example prompts:**
-
-- "Install the Salesforce skill"
-- "Set up the Salesforce MCP skill for Claude Code"
-- "Reinstall the Salesforce skill with force"
-
-#### 41-48. Bulk API 2.0 Tools
+#### 40-47. Bulk API 2.0 Tools
 
 Bulk API 2.0 tools run large DML jobs asynchronously through the existing org connection. Each tool starts a job, waits up to `wait` seconds (default 30, max 45), and returns the `jobId`, state, processed and failed counts, and up to 10 sample failures. If the job is still running, call `bulk_job_status` with the `jobId`. Input is one of inline `records` (max 2000 rows, 10 MB serialized), a `csvPath` to a UTF-8 CSV file on the server's disk (max 150 MB), or `csvContent`, the raw CSV text with its header row (max 10 MB). Use `records` for small inline sets, `csvPath` for a file already on the server's disk, and `csvContent` when the file cannot be read from the server's machine, for example when it was uploaded into a sandboxed client such as Claude Cowork (the client passes the file's text, and the server never sees the file's path). Exactly one of the three is allowed. Delete tools take `ids` in place of `records`.
 
