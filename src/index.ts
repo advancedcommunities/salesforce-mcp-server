@@ -30,7 +30,7 @@ import { createStdioTransport } from "./utils/stdioTransport.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** Single source of truth for the server version; keep in sync with package.json */
-const SERVER_VERSION = "1.8.0";
+const SERVER_VERSION = "1.9.0";
 
 function loadServerIcon(): string | undefined {
     const iconPath = join(__dirname, "..", "icon.png");
